@@ -5,3 +5,6 @@ Thumbs.db
 # Editor
 .vscode/
 *.log
+
+# Local drafts (not for repo)
+PROFILE_README_DRAFT.md

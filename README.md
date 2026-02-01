@@ -1,9 +1,19 @@
 # Axiom
 
-https://axiomwin.vercel.app/
+> Roblox loader & scripts — [axiomwin.vercel.app](https://axiomwin.vercel.app/)
 
-## Layout
+![Roblox](https://img.shields.io/badge/Roblox-00A2FF?style=flat&logo=roblox&logoColor=white)
+![Lua](https://img.shields.io/badge/Lua-2C2D72?style=flat&logo=lua&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000?style=flat&logo=vercel&logoColor=white)
 
-- **scripts/** — `axiommain.txt` (core), `axiom_mm2.txt` (MM2). Cascade loads from biggaboy212/Cascade on GitHub.
-- **docs/** — AX-EC rules, Cascade API reference.
-- **website/** — Site (Vercel): index, css, api.
+### Repo layout
+
+| Folder | Contents |
+|--------|----------|
+| **scripts/** | `axiommain.txt` — core UI/loader · `axiom_mm2.txt` — Murder Mystery 2 build (Cascade from biggaboy212/Cascade) |
+| **docs/** | AX-EC rules, Cascade API reference |
+| **website/** | Landing site (Vercel): index, css, api |
+
+### Link
+
+**[→ axiomwin.vercel.app](https://axiomwin.vercel.app/)**
