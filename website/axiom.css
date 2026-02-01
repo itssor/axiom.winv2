@@ -10,11 +10,15 @@
   --axiom-glow: rgba(107, 140, 255, 0.4);
   --axiom-radius: 10px;
   --axiom-radius-lg: 14px;
-  --axiom-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --axiom-font: "Ubuntu", system-ui, sans-serif;
 }
 
 * {
   box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
