@@ -8,3 +8,6 @@ Thumbs.db
 
 # Local drafts (not for repo)
 PROFILE_README_DRAFT.md
+
+# Grabbed/scraped content (local only)
+grabbed scripts/

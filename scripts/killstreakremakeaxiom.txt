@@ -1,0 +1,414 @@
+-- Axiom.win | Kill Streak Remake (from scratch, Cascade + Axiom branding)
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local Stats = game:GetService("Stats")
+
+task.wait(0.1)
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+local UIState = { CascadeWindowInstance = nil, CascadeTheme = "Dark" }
+local AxiomConnections = {}
+local function AxiomTrackConnection(c)
+    table.insert(AxiomConnections, c)
+    return c
+end
+local function AxiomDisconnectAll()
+    for _, conn in ipairs(AxiomConnections) do pcall(function() conn:Disconnect() end) end
+    table.clear(AxiomConnections)
+end
+
+local defaultConfig = {
+    Movement = {
+        SpeedEnabled = false,
+        SpeedActive = false,
+        SpeedValue = 16,
+        SpeedKey = Enum.KeyCode.V,
+        SpeedMode = "Toggle",
+        SpeedMethod = "CFrame",
+    },
+    KillStreak = {
+        SlapTarget = "",
+        SlapValue = 7,
+        SlapValueFake = 4,
+        UseFakeModel = false,
+    },
+    Misc = {
+        WatermarkEnabled = true,
+        WatermarkPosition = "TopLeft",
+        DarkMode = true,
+    },
+}
+local _G_Config = defaultConfig
+
+local function getUIPresetAccent(_)
+    return Color3.fromRGB(107, 140, 255)
+end
+
+local AxiomNotify
+AxiomNotify = function(title, text)
+    local isDark = UIState.CascadeTheme == "Dark"
+    local accent = getUIPresetAccent(nil)
+    local notifyBg = isDark and Color3.fromRGB(12, 12, 12) or Color3.fromRGB(235, 235, 235)
+    local notifyTitle = accent or (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 20, 20))
+    local notifyBody = isDark and Color3.fromRGB(220, 220, 220) or Color3.fromRGB(40, 40, 40)
+    local sg = Instance.new("ScreenGui")
+    sg.Name = "AxiomNotify"
+    sg.DisplayOrder = 9999
+    sg.IgnoreGuiInset = true
+    sg.ResetOnSpawn = false
+    sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    sg.Parent = (gethui and gethui()) or game:GetService("CoreGui")
+    local f = Instance.new("Frame")
+    f.AnchorPoint = Vector2.new(1, 0)
+    f.Position = UDim2.new(1, -20, 0, 20)
+    f.Size = UDim2.fromOffset(300, 60)
+    f.BackgroundColor3 = notifyBg
+    f.BackgroundTransparency = 0.1
+    f.BorderSizePixel = 0
+    f.Parent = sg
+    Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
+    local titleL = Instance.new("TextLabel")
+    titleL.BackgroundTransparency = 1
+    titleL.TextXAlignment = Enum.TextXAlignment.Left
+    titleL.Font = Enum.Font.GothamBold
+    titleL.TextSize = 16
+    titleL.TextColor3 = notifyTitle
+    titleL.Text = tostring(title or "Axiom.win")
+    titleL.Position = UDim2.fromOffset(10, 6)
+    titleL.Size = UDim2.new(1, -20, 0, 20)
+    titleL.Parent = f
+    local bodyL = Instance.new("TextLabel")
+    bodyL.BackgroundTransparency = 1
+    bodyL.TextXAlignment = Enum.TextXAlignment.Left
+    bodyL.Font = Enum.Font.Gotham
+    bodyL.TextSize = 14
+    bodyL.TextColor3 = notifyBody
+    bodyL.TextWrapped = true
+    bodyL.Text = tostring(text or "")
+    bodyL.Position = UDim2.fromOffset(10, 28)
+    bodyL.Size = UDim2.new(1, -20, 1, -34)
+    bodyL.Parent = f
+    task.delay(3, function() if sg then sg:Destroy() end end)
+end
+
+local function getPingMs()
+    local getPing = ReplicatedStorage:FindFirstChild("GetPing")
+    if getPing and getPing:IsA("RemoteFunction") then
+        local ok, result = pcall(function() return getPing:InvokeServer() end)
+        if ok and type(result) == "number" then return result end
+        if ok and type(result) == "string" then return tonumber(result:match("(%d+%.?%d*)")) or 0 end
+    end
+    local ping = 0
+    local ok = pcall(function()
+        local network = Stats:FindFirstChild("Network")
+        local serverStats = network and network:FindFirstChild("ServerStatsItem")
+        local pingStat = serverStats and serverStats:FindFirstChild("Ping")
+        if pingStat and pingStat:IsA("DoubleConstrainedValue") then ping = pingStat.Value end
+    end)
+    return ping
+end
+
+local Watermark = { Gui = nil, Frame = nil, Title = nil, Body = nil, Accum = 0, Frames = 0, Fps = 0, Ping = 0 }
+local function ensureWatermark()
+    if not _G_Config.Misc.WatermarkEnabled then
+        if Watermark.Gui then Watermark.Gui:Destroy() Watermark.Gui = nil Watermark.Frame = nil Watermark.Title = nil Watermark.Body = nil end
+        return
+    end
+    if Watermark.Gui and Watermark.Gui.Parent then return end
+    local sg = Instance.new("ScreenGui")
+    sg.Name = "AxiomWatermark"
+    sg.DisplayOrder = 9998
+    sg.IgnoreGuiInset = true
+    sg.ResetOnSpawn = false
+    sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    sg.Parent = (gethui and gethui()) or game:GetService("CoreGui")
+    local f = Instance.new("Frame")
+    f.AnchorPoint = Vector2.new(0, 0)
+    f.Position = UDim2.new(0, 16, 0, 16)
+    f.Size = UDim2.fromOffset(340, 50)
+    f.BorderSizePixel = 0
+    f.Parent = sg
+    Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
+    local titleL = Instance.new("TextLabel")
+    titleL.BackgroundTransparency = 1
+    titleL.TextXAlignment = Enum.TextXAlignment.Left
+    titleL.Font = Enum.Font.GothamBold
+    titleL.TextSize = 16
+    titleL.Text = "Axiom.win | Kill Streak Remake"
+    titleL.Position = UDim2.fromOffset(10, 6)
+    titleL.Size = UDim2.new(1, -20, 0, 20)
+    titleL.Parent = f
+    local bodyL = Instance.new("TextLabel")
+    bodyL.BackgroundTransparency = 1
+    bodyL.TextXAlignment = Enum.TextXAlignment.Left
+    bodyL.Font = Enum.Font.Gotham
+    bodyL.TextSize = 14
+    bodyL.TextWrapped = false
+    bodyL.Position = UDim2.fromOffset(10, 26)
+    bodyL.Size = UDim2.new(1, -20, 1, -34)
+    bodyL.Parent = f
+    Watermark.Gui = sg
+    Watermark.Frame = f
+    Watermark.Title = titleL
+    Watermark.Body = bodyL
+end
+
+local function getPlayerNames()
+    local list = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then table.insert(list, p.Name) end
+    end
+    return list
+end
+
+local function fireSlapRemote(targetPlayerName, useFakeModel, value)
+    local clientReadable = ReplicatedStorage:FindFirstChild("ClientReadable")
+    local remotes = clientReadable and clientReadable:FindFirstChild("Remotes")
+    local slapRemote = remotes and remotes:FindFirstChild("SlapRemote")
+    if not slapRemote or not slapRemote:IsA("RemoteEvent") then
+        AxiomNotify("Kill Streak", "SlapRemote not found.")
+        return
+    end
+    local backpack = LocalPlayer:FindFirstChild("Backpack")
+    local killstreakTool = backpack and backpack:FindFirstChild("Killstreak")
+    if not killstreakTool then
+        AxiomNotify("Kill Streak", "Need Killstreak in Backpack.")
+        return
+    end
+    local arg1, arg2, arg3
+    if useFakeModel then
+        arg1 = Instance.new("Model", nil)
+        arg2 = killstreakTool
+        arg3 = value
+    else
+        local target = targetPlayerName and Players:FindFirstChild(targetPlayerName)
+        local targetChar = target and target:FindFirstChild("Character")
+        if not targetChar then
+            AxiomNotify("Kill Streak", "Target not found or no character.")
+            return
+        end
+        arg1 = targetChar
+        arg2 = killstreakTool
+        arg3 = value
+    end
+    pcall(function() slapRemote:FireServer(arg1, arg2, arg3) end)
+    AxiomNotify("Kill Streak", "Slap sent.")
+end
+
+local function getBPStat()
+    local getBPStat = ReplicatedStorage:FindFirstChild("GetBPStat")
+    if not getBPStat or not getBPStat:IsA("RemoteFunction") then return nil end
+    local ok, result = pcall(function() return getBPStat:InvokeServer("OwnsBP") end)
+    if ok then return result end
+    return nil
+end
+
+local function fireRemote(name, ...)
+    local args = { ... }
+    local clientReadable = ReplicatedStorage:FindFirstChild("ClientReadable")
+    local remotes = clientReadable and clientReadable:FindFirstChild("Remotes")
+    local trading = remotes and remotes:FindFirstChild("TradingRemotes")
+    local remote = (remotes and remotes:FindFirstChild(name)) or (trading and trading:FindFirstChild(name))
+    if not remote then
+        AxiomNotify("Kill Streak", name .. " not found.")
+        return
+    end
+    if remote:IsA("RemoteEvent") then
+        pcall(function() remote:FireServer(unpack(args)) end)
+    elseif remote:IsA("RemoteFunction") then
+        pcall(function() remote:InvokeServer(unpack(args)) end)
+    end
+    AxiomNotify("Kill Streak", name .. " fired.")
+end
+
+local function __axiom_build_ui_with_cascade()
+    local function __import(owner, repo, version, file)
+        local tag = (version == "latest" and "latest/download" or ("download/" .. version))
+        local ok, lib = pcall(function()
+            return loadstring(game:HttpGetAsync(("https://github.com/%s/%s/releases/%s/%s"):format(owner, repo, tag, file)), file)()
+        end)
+        return ok and lib or nil
+    end
+    local cascade = __import("biggaboy212", "Cascade", "v1.0.1-beta.1", "dist.luau")
+    if not cascade then
+        warn("Cascade failed to load.")
+        return nil
+    end
+    local app = cascade.New({ WindowPill = true, Theme = cascade.Themes.Dark })
+    UIState.CascadeTheme = "Dark"
+    local window = app:Window({ Title = "Axiom.win", Subtitle = "Kill Streak Remake", Searching = true, Draggable = true, Resizable = true, Dropshadow = true, UIBlur = false })
+    UIState.CascadeWindowInstance = window.__instance
+    local pages = window:Section({ Title = "Pages", Disclosure = false, Expanded = true })
+
+    local function newRow(form, label) return form:Row({ Label = label }) end
+    local function pullDown(row, options, selectedIndex, onChange)
+        row:Right():PullDownButton({ Options = options, Value = selectedIndex, ValueChanged = onChange })
+    end
+
+    do
+        local tab = pages:Tab({ Title = "Movement" })
+        local sec = tab:PageSection({ Title = "Speed" })
+        local form = sec:Form()
+        newRow(form, "Enabled"):Right():Toggle({ Value = _G_Config.Movement.SpeedEnabled, ValueChanged = function(_, v) _G_Config.Movement.SpeedEnabled = v end })
+        pullDown(newRow(form, "Method"):Right(), { "CFrame", "Velocity" }, (_G_Config.Movement.SpeedMethod == "Velocity" and 2 or 1), function(_, i)
+            _G_Config.Movement.SpeedMethod = ({"CFrame", "Velocity"})[i]
+        end)
+        newRow(form, "Magnitude"):Right():Slider({ Minimum = 16, Maximum = 250, Value = _G_Config.Movement.SpeedValue, ValueChanged = function(_, v) _G_Config.Movement.SpeedValue = v end })
+        newRow(form, "Speed Keybind"):Right():KeybindField({ Value = _G_Config.Movement.SpeedKey, ValueChanged = function(_, k) _G_Config.Movement.SpeedKey = k end })
+        pullDown(newRow(form, "Mode"):Right(), { "Hold", "Toggle", "Always On" }, ({ Hold = 1, Toggle = 2, ["Always On"] = 3 })[_G_Config.Movement.SpeedMode] or 2, function(_, i)
+            _G_Config.Movement.SpeedMode = ({"Hold", "Toggle", "Always On"})[i]
+        end)
+    end
+
+    do
+        local tab = pages:Tab({ Title = "Kill Streak" })
+        local secSlap = tab:PageSection({ Title = "Slap / Hit" })
+        local formSlap = secSlap:Form()
+        local playerOptions = getPlayerNames()
+        if #playerOptions == 0 then table.insert(playerOptions, "No players") end
+        _G_Config.KillStreak.SlapTarget = playerOptions[1] or ""
+        newRow(formSlap, "Target"):Right():PullDownButton({
+            Options = playerOptions,
+            Value = 1,
+            ValueChanged = function(_, i)
+                _G_Config.KillStreak.SlapTarget = playerOptions[i] or ""
+            end
+        })
+        newRow(formSlap, "Refresh targets"):Right():Button({ Label = "Refresh", Pushed = function()
+            local fresh = getPlayerNames()
+            if #fresh == 0 then table.insert(fresh, "No players") end
+            _G_Config.KillStreak.SlapTarget = fresh[1] or ""
+            AxiomNotify("Kill Streak", "Target list refreshed. Reopen script to see new list.")
+        end })
+        newRow(formSlap, "Slap value"):Right():Slider({ Minimum = 1, Maximum = 20, Value = _G_Config.KillStreak.SlapValue, ValueChanged = function(_, v) _G_Config.KillStreak.SlapValue = v end })
+        newRow(formSlap, "Use fake model"):Right():Toggle({ Value = _G_Config.KillStreak.UseFakeModel, ValueChanged = function(_, v) _G_Config.KillStreak.UseFakeModel = v end })
+        newRow(formSlap, "Fake model value"):Right():Slider({ Minimum = 1, Maximum = 20, Value = _G_Config.KillStreak.SlapValueFake, ValueChanged = function(_, v) _G_Config.KillStreak.SlapValueFake = v end })
+        newRow(formSlap, "Slap"):Right():Button({ Label = "Slap target", Pushed = function()
+            local useFake = _G_Config.KillStreak.UseFakeModel
+            local val = useFake and _G_Config.KillStreak.SlapValueFake or _G_Config.KillStreak.SlapValue
+            fireSlapRemote(_G_Config.KillStreak.SlapTarget, useFake, val)
+        end })
+
+        local secRemotes = tab:PageSection({ Title = "Remotes" })
+        local formR = secRemotes:Form()
+        newRow(formR, "Explosion"):Right():Button({ Label = "Fire Explosion", Pushed = function() fireRemote("Explosion") end })
+        newRow(formR, "Rebound"):Right():Button({ Label = "Fire rebound", Pushed = function() fireRemote("rebound") end })
+        newRow(formR, "Respawn"):Right():Button({ Label = "Fire Respawn", Pushed = function() fireRemote("Respawn") end })
+    end
+
+    do
+        local tab = pages:Tab({ Title = "Misc" })
+        local sec = tab:PageSection({ Title = "Watermark" })
+        local form = sec:Form()
+        newRow(form, "Enable"):Right():Toggle({ Value = _G_Config.Misc.WatermarkEnabled, ValueChanged = function(_, v) _G_Config.Misc.WatermarkEnabled = v end })
+        pullDown(newRow(form, "Position"):Right(), { "TopLeft", "TopRight", "BottomLeft", "BottomRight" }, ({ TopLeft = 1, TopRight = 2, BottomLeft = 3, BottomRight = 4 })[_G_Config.Misc.WatermarkPosition] or 1, function(_, i)
+            _G_Config.Misc.WatermarkPosition = ({ "TopLeft", "TopRight", "BottomLeft", "BottomRight" })[i]
+        end)
+        local secBP = tab:PageSection({ Title = "BP Stat" })
+        local formBP = secBP:Form()
+        newRow(formBP, "OwnsBP"):Right():Button({ Label = "Check OwnsBP", Pushed = function()
+            local result = getBPStat()
+            AxiomNotify("BP Stat", result == nil and "GetBPStat not found or error." or tostring(result))
+        end })
+    end
+
+    return window
+end
+
+local Window = __axiom_build_ui_with_cascade(_G_Config)
+if not Window then return end
+
+AxiomTrackConnection(UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == _G_Config.Movement.SpeedKey then
+        if _G_Config.Movement.SpeedEnabled and _G_Config.Movement.SpeedMode ~= "Always On" then
+            if _G_Config.Movement.SpeedMode == "Toggle" then _G_Config.Movement.SpeedActive = not _G_Config.Movement.SpeedActive else _G_Config.Movement.SpeedActive = true end
+        end
+    end
+end))
+AxiomTrackConnection(UserInputService.InputEnded:Connect(function(input)
+    if _G_Config.Movement.SpeedMode == "Hold" and input.KeyCode == _G_Config.Movement.SpeedKey then _G_Config.Movement.SpeedActive = false end
+end))
+
+local function AxiomMovementCleanup(hrp, keepSpeed)
+    if not hrp or not hrp.Parent then return end
+    pcall(function()
+        if not keepSpeed then
+            local bs = hrp:FindFirstChild("Axiom_Speed")
+            if bs then bs:Destroy() end
+        end
+        if not keepSpeed then hrp.AssemblyLinearVelocity = Vector3.new(hrp.AssemblyLinearVelocity.X, 0, hrp.AssemblyLinearVelocity.Z) end
+    end)
+end
+
+AxiomTrackConnection(LocalPlayer.CharacterAdded:Connect(function()
+    task.defer(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then AxiomMovementCleanup(hrp, false) end
+    end)
+end))
+
+local tpWalkAccum = 0
+AxiomTrackConnection(RunService.RenderStepped:Connect(function(dt)
+    ensureWatermark()
+    Watermark.Accum = Watermark.Accum + dt
+    Watermark.Frames = Watermark.Frames + 1
+    if Watermark.Accum >= 0.5 then
+        Watermark.Fps = Watermark.Frames / Watermark.Accum
+        Watermark.Ping = getPingMs()
+        Watermark.Accum = 0
+        Watermark.Frames = 0
+        local pos = _G_Config.Misc.WatermarkPosition or "TopLeft"
+        local isDark = UIState.CascadeTheme == "Dark"
+        local accent = getUIPresetAccent(nil)
+        if Watermark.Frame then
+            if pos == "TopRight" then Watermark.Frame.AnchorPoint = Vector2.new(1, 0) Watermark.Frame.Position = UDim2.new(1, -16, 0, 16)
+            elseif pos == "BottomLeft" then Watermark.Frame.AnchorPoint = Vector2.new(0, 1) Watermark.Frame.Position = UDim2.new(0, 16, 1, -16)
+            elseif pos == "BottomRight" then Watermark.Frame.AnchorPoint = Vector2.new(1, 1) Watermark.Frame.Position = UDim2.new(1, -16, 1, -16)
+            else Watermark.Frame.AnchorPoint = Vector2.new(0, 0) Watermark.Frame.Position = UDim2.new(0, 16, 0, 16) end
+            Watermark.Frame.BackgroundColor3 = isDark and Color3.fromRGB(12, 12, 12) or Color3.fromRGB(235, 235, 235)
+            Watermark.Frame.BackgroundTransparency = 0.1
+        end
+        if Watermark.Title then Watermark.Title.TextColor3 = accent or (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 20, 20)) end
+        if Watermark.Body then
+            Watermark.Body.TextColor3 = isDark and Color3.fromRGB(220, 220, 220) or Color3.fromRGB(40, 40, 40)
+            Watermark.Body.Text = string.format("FPS: %d | Ping: %dms", math.floor(Watermark.Fps + 0.5), math.floor(Watermark.Ping + 0.5))
+        end
+    end
+
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local speedOn = _G_Config.Movement.SpeedEnabled and _G_Config.Movement.SpeedActive
+    if _G_Config.Movement.SpeedMode == "Always On" then _G_Config.Movement.SpeedActive = _G_Config.Movement.SpeedEnabled end
+    if char and hrp and hum and speedOn then
+        if _G_Config.Movement.SpeedMethod == "CFrame" then
+            local speedVal = math.clamp(tonumber(_G_Config.Movement.SpeedValue) or 20, 1, 200)
+            pcall(function() char:TranslateBy(hum.MoveDirection * speedVal * dt * 2) end)
+        else
+            local bv = hrp:FindFirstChild("Axiom_Speed") or Instance.new("BodyVelocity", hrp)
+            bv.Name = "Axiom_Speed"
+            bv.MaxForce = Vector3.new(math.huge, 0, math.huge)
+            local speedVal = math.clamp(tonumber(_G_Config.Movement.SpeedValue) or 20, 1, 200)
+            bv.Velocity = hum.MoveDirection * speedVal
+        end
+    else
+        local bs = hrp and hrp:FindFirstChild("Axiom_Speed")
+        if bs then
+            bs:Destroy()
+            if hrp then
+                local v = hrp.AssemblyLinearVelocity
+                hrp.AssemblyLinearVelocity = Vector3.new(0, v.Y, 0)
+            end
+        end
+    end
+end))
+
+AxiomNotify("Axiom.win", "Kill Streak Remake loaded.")

@@ -2077,6 +2077,12 @@ AxiomTrackConnection(RunService.RenderStepped:Connect(function(dt)
     elseif not _G_Config.Movement.FreecamEnabled then
         _G_Config.Movement.FreecamActive = false
     end
+    if _G_Config.Movement.SpeedMode == "Hold" and _G_Config.Movement.SpeedActive and not UserInputService:IsKeyDown(_G_Config.Movement.SpeedKey) then
+        _G_Config.Movement.SpeedActive = false
+    end
+    if _G_Config.Movement.FlyMode == "Hold" and _G_Config.Movement.FlyActive and not UserInputService:IsKeyDown(_G_Config.Movement.FlyKey) then
+        _G_Config.Movement.FlyActive = false
+    end
     if _G_Config.Misc.ZoomMode == "Always On" then
         _G_Config.Misc.ZoomActive = _G_Config.Misc.ZoomEnabled
     elseif not _G_Config.Misc.ZoomEnabled then
@@ -2391,7 +2397,7 @@ AxiomTrackConnection(RunService.Heartbeat:Connect(function(dt)
     local flyOn = _G_Config.Movement.FlyEnabled and _G_Config.Movement.FlyActive
     local speedOn = _G_Config.Movement.SpeedEnabled and _G_Config.Movement.SpeedActive
     local anyMovementOn = (flyOn or speedOn or _G_Config.Movement.Noclip or _G_Config.Movement.Bhop or _G_Config.Movement.TPWalk or _G_Config.Movement.Spinbot)
-    if char and hrp and hum and (anyMovementOn or noclipWasOn) then
+    if char and hrp and hum then
         if flyOn then
             local flyDir = Vector3.new(0, 0, 0)
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then flyDir = flyDir + Camera.CFrame.LookVector end
@@ -2438,7 +2444,9 @@ AxiomTrackConnection(RunService.Heartbeat:Connect(function(dt)
                 hrp.AssemblyLinearVelocity = Vector3.new(0, v.Y, 0)
             end
         end
+    end
 
+    if char and hrp and hum and (anyMovementOn or noclipWasOn) then
         if _G_Config.Movement.Bhop and hum.FloorMaterial ~= Enum.Material.Air then
             hum:ChangeState("Jumping")
         end
