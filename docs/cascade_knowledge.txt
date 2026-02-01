@@ -1,0 +1,5915 @@
+
+
+--- SOURCE: Cascade.html ---
+
+Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+Welcome
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Welcome
+Table of contents
+Getting started
+Supporting the project
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Getting started
+Supporting the project
+Welcome
+Welcome to the official API documentation for the
+Cascade
+UI Library. You can use these docs as reference to build interfaces with the Cascade API, or use it as a reference for your own UI Library.
+Tip
+Don't get overwheled with how much info is presented in each component, you can ignore most things besides the example and types.
+Getting started
+Importing the Library
+Creating an Application
+Example
+Supporting the project
+If you'd like to support the project, consider donating via any of these:
+LTC
+:
+Lcd6pCPiVw9GH2MAaGkR8TX39EtL2LzFoa
+SOL
+:
+EfwivXazedEw2kL2et92NKDkT3qrQ6pdxA8Bs7RKYRuN
+ETH
+:
+0x85C09A302CBB42a321E737E6E4dDAC0Eebc4ac3E
+BTC
+:
+bc1qlhym0f0lejwlhd47gext8g7fgej366j7z85vvx
+Back to top
+Next
+Interface Guidelines
+
+--- SOURCE: Cascade_Components.html ---
+
+Base Component - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+Base Component
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Types
+Welcome
+Components
+Base Component
+BaseComponent
+is the base class from which all Cascade components inherit. It provides core fields such as
+Type
+,
+Theme
+, and
+Structures
+.
+Summary
+Properties
+Property
+Type
+Description
+Type
+string
+[Read-only]
+Defines the Component's class.
+Theme
+string
+[Read-only]
+Inherited theme from the calling component.
+Structures
+{[
+string
+]:
+Instance
+?
+}
+[Read-only]
+Table of defined component structures.
+Warning
+Note that to access a component's actual instance, you will need to index
+__instance
+on it, this will return the actual roblox object instead of a merged metatable with the custom object.
+Types
+export
+type
+BaseComponent
+=
+{
+Type
+:
+string
+,
+Theme
+:
+Theme
+,
+Structures
+:
+{
+[
+string
+]:
+Instance
+|
+{
+any
+}
+},
+}
+Back to top
+Previous
+Example
+Next
+Window
+
+--- SOURCE: Cascade_Components_Button.html ---
+
+Button - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+Button
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Button
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+Button
+A
+Button
+initiates an instantaneous action.
+Summary
+Properties
+Property
+Type
+Description
+State
+(
+"Primary"
+|
+"Secondary"
+|
+"Destructive"
+)
+?
+Determines the weight of the button. Suggests to the user it's impact to the content around it
+Label
+string
+?
+The text content of the button.
+View all inherited from
+BaseComponent
+View all inherited from
+TextButton
+Methods
+View all inherited from
+TextButton
+Events
+Event
+Signature
+Description
+Pushed
+((
+self
+:
+Button
+)
+->
+unknown
+)
+?
+A callback function that is triggered when the button has been fully clicked or tapped.
+View all inherited from
+TextButton
+Types
+type
+ButtonProperties
+=
+TextButton
+&
+{
+State
+:
+(
+"Primary"
+|
+"Secondary"
+|
+"Destructive"
+)
+?
+,
+Label
+:
+string
+?
+,
+Pushed
+:
+((
+self
+:
+Button
+)
+->
+unknown
+)
+?
+,
+}
+type
+Button
+=
+BaseComponent
+&
+Components
+&
+ButtonProperties
+Function Signature
+function
+(
+self
+,
+properties
+:
+ButtonProperties
+):
+Button
+Example
+local
+button
+=
+row
+:
+Right
+():
+Button
+({
+Label
+=
+"Button"
+,
+State
+=
+"Primary"
+,
+Pushed
+=
+function
+(
+self
+)
+print
+(
+"Pushed"
+)
+end
+,
+})
+print
+(
+button
+:
+IsA
+(
+"TextButton"
+))
+--> true
+print
+(
+button
+.
+ClassName
+)
+--> "TextButton"
+print
+(
+button
+.
+Type
+)
+--> "Button"
+Back to top
+Previous
+Symbol
+Next
+Toggle
+
+--- SOURCE: Cascade_Components_Form.html ---
+
+Form - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+Form
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Form
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+Form
+A
+Form
+is a vertical container that organizes interface elements into clearly separated rows, using consistent styling like dividers to emphasize structure.
+Summary
+Properties
+View all inherited from
+BaseComponent
+View all inherited from
+Frame
+Methods
+View all inherited from
+Frame
+Events
+View all inherited from
+Frame
+Types
+type
+FormProperties
+=
+Frame
+type
+Form
+=
+BaseComponent
+&
+Components
+&
+FormProperties
+Function Signature
+function
+(
+self
+,
+properties
+:
+FormProperties
+):
+Form
+Example
+local
+form
+=
+section
+:
+Form
+()
+print
+(
+form
+:
+IsA
+(
+"Frame"
+))
+--> true
+print
+(
+form
+.
+ClassName
+)
+--> "Frame"
+print
+(
+form
+.
+Type
+)
+--> "Form"
+Back to top
+Previous
+PageSection
+Next
+Row
+
+--- SOURCE: Cascade_Components_HStack.html ---
+
+HStack - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+HStack
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+HStack
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+HStack
+A
+HStack
+is a frame that horizontally sorts content.
+Summary
+Properties
+Property
+Type
+Description
+Padding
+UDim
+?
+The padding between objects.
+HorizontalAlignment
+Enum
+.
+HorizontalAlignment
+?
+The content X axis alignment.
+VerticalAlignment
+Enum
+.
+VerticalAlignment
+?
+The content Y axis alignment.
+View all inherited from
+BaseComponent
+View all inherited from
+Frame
+Methods
+View all inherited from
+Frame
+Events
+View all inherited from
+Frame
+Types
+type
+StackProperties
+=
+Frame
+&
+{
+Padding
+:
+UDim
+?
+,
+HorizontalAlignment
+:
+Enum
+.
+HorizontalAlignment
+?
+,
+VerticalAlignment
+:
+Enum
+.
+VerticalAlignment
+?
+,
+}
+type
+Stack
+=
+BaseComponent
+&
+Components
+&
+StackProperties
+Function Signature
+function
+(
+self
+,
+properties
+:
+StackProperties
+):
+Stack
+Example
+local
+hStack
+=
+row
+:
+Right
+():
+HStack
+()
+print
+(
+hStack
+:
+IsA
+(
+"Frame"
+))
+--> true
+print
+(
+hStack
+.
+ClassName
+)
+--> "Frame"
+print
+(
+hStack
+.
+Type
+)
+--> "HStack"
+Back to top
+Previous
+VStack
+Next
+TitleStack
+
+--- SOURCE: Cascade_Components_KeybindField.html ---
+
+KeybindField - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+KeybindField
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+KeybindField
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+KeybindField
+A
+KeybindField
+is a rectangular area in which people can enter and store
+Enum.KeyCode
+InputObject
+'s, then trigger a callback after pressing the stored KeyCode
+Summary
+Properties
+Property
+Type
+Description
+Placeholder
+string
+?
+The text placeholder to instruct users on how to interact with the component.
+Value
+Enum
+.
+Keycode
+?
+The default shortcut the
+KeybindField
+is bound to.
+View all inherited from
+BaseComponent
+View all inherited from
+Frame
+Methods
+View all inherited from
+Frame
+Events
+Event
+Signature
+Description
+BindPressed
+((
+self
+:
+KeybindField
+,
+value
+:
+Enum
+.
+KeyCode
+,
+inputComplete
+:
+boolean
+,
+gameProcessedEvent
+:
+boolean
+)
+->
+unknown
+)
+?
+A Callback function that is triggered when the
+Value
+KeyCode has been pressed.
+ValueChanged
+((
+self
+:
+KeybindField
+,
+value
+:
+Enum
+.
+KeyCode
+)
+->
+unknown
+)
+?
+A Callback function that is triggered when the
+Value
+property has been modified.
+View all inherited from
+Frame
+Types
+type
+KeybindFieldProperties
+=
+Frame
+&
+{
+Placeholder
+:
+string
+?
+,
+Value
+:
+Enum
+.
+KeyCode
+?
+,
+BindPressed
+:
+((
+self
+:
+KeybindField
+,
+value
+:
+Enum
+.
+KeyCode
+,
+inputComplete
+:
+boolean
+,
+gameProcessedEvent
+:
+boolean
+)
+->
+unknown
+)
+?
+,
+ValueChanged
+:
+((
+self
+:
+KeybindField
+,
+value
+:
+Enum
+.
+KeyCode
+)
+->
+unknown
+)
+?
+,
+}
+type
+KeybindField
+=
+BaseComponent
+&
+Components
+&
+KeybindFieldProperties
+Function Signature
+function
+(
+self
+,
+properties
+:
+KeybindFieldProperties
+):
+KeybindField
+Example
+local
+keybindField
+=
+row
+:
+Right
+():
+KeybindField
+({
+ValueChanged
+=
+function
+(
+self
+,
+value
+:
+Enum
+.
+KeyCode
+)
+print
+(
+"Value changed:"
+,
+value
+)
+end
+,
+BindPressed
+=
+function
+(
+self
+,
+value
+:
+Enum
+.
+KeyCode
+,
+inputComplete
+:
+boolean
+,
+gameProcessedEvent
+:
+boolean
+)
+if
+not
+inputComplete
+or
+gameProcessedEvent
+then
+return
+end
+print
+(
+"Pressed bind:"
+,
+value
+)
+end
+,
+})
+print
+(
+keybindField
+:
+IsA
+(
+"Frame"
+))
+--> true
+print
+(
+keybindField
+.
+ClassName
+)
+--> "Frame"
+print
+(
+keybindField
+.
+Type
+)
+--> "KeybindField"
+keybindField
+.
+Value
+=
+Enum
+.
+KeyCode
+.
+Z
+--> Value changed: Enum.KeyCode.Z
+Back to top
+Previous
+Slider
+Next
+TextField
+
+--- SOURCE: Cascade_Components_Label.html ---
+
+Label - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+Label
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Label
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+Label
+A
+Label
+is a static piece of text that people can read, but not edit.
+Summary
+Properties
+View all inherited from
+BaseComponent
+View all inherited from
+TextLabel
+Methods
+View all inherited from
+TextLabel
+Events
+View all inherited from
+TextLabel
+Types
+type
+LabelProperties
+=
+TextLabel
+type
+Label
+=
+BaseComponent
+&
+Components
+&
+FormProperties
+Function Signature
+function
+(
+self
+,
+properties
+:
+LabelProperties
+):
+Label
+Example
+local
+label
+=
+row
+:
+Right
+():
+Label
+({
+Text
+=
+"Label"
+})
+print
+(
+label
+:
+IsA
+(
+"TextLabel"
+))
+--> true
+print
+(
+label
+.
+ClassName
+)
+--> "TextLabel"
+print
+(
+label
+.
+Type
+)
+--> "Label"
+Back to top
+Previous
+TitleStack
+Next
+Symbol
+
+--- SOURCE: Cascade_Components_PageSection.html ---
+
+PageSection - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+PageSection
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+PageSection
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+PageSection
+A
+PageSection
+separates content in a page into digestible sections via a Title stack. For example, a settings page might have:
+Appearance
+Input
+Effects
+Summary
+Properties
+Property
+Type
+Description
+Title
+string
+?
+The section's title.
+Subtitle
+string
+?
+The section's sub-title. If left nil, the subtitle will be non-visible.
+View all inherited from
+BaseComponent
+View all inherited from
+Frame
+Methods
+View all inherited from
+Frame
+Events
+View all inherited from
+Frame
+Types
+type
+PageSectionProperties
+=
+Frame
+&
+{
+Title
+:
+string
+?
+,
+Subtitle
+:
+string
+?
+,
+}
+type
+PageSection
+=
+BaseComponent
+&
+Components
+&
+PageSectionProperties
+Function Signature
+function
+(
+self
+,
+properties
+:
+PageSectionProperties
+):
+PageSection
+Example
+local
+pageSection
+=
+tab
+:
+PageSection
+({
+Title
+=
+"Effects"
+,
+Subtitle
+=
+"These effects may be resource intensive across different systems."
+,
+})
+print
+(
+pageSection
+:
+IsA
+(
+"Frame"
+))
+--> true
+print
+(
+pageSection
+.
+ClassName
+)
+--> "Frame"
+print
+(
+pageSection
+.
+Type
+)
+--> "PageSection"
+Back to top
+Previous
+Tab
+Next
+Form
+
+--- SOURCE: Cascade_Components_PopUpButton.html ---
+
+PopUpButton - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+PopUpButton
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PopUpButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Multi-select Example
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Multi-select Example
+Welcome
+Components
+PopUpButton
+A
+PopUpbutton
+displays a menu of mutually exclusive options.
+Summary
+Properties
+Property
+Type
+Description
+Options
+{[
+number
+]:
+string
+}
+?
+You can use this table to pre-define options. Note that doing it this way will not give you access to the option instances themselves.
+Maximum
+number
+?
+Maximum number of selectable options. Defaults to
+1
+(single-select).
+Value
+number
+?
+or
+{
+number
+}
+?
+The selected index (single) or a table of selected indices when
+Maximum > 1
+.
+View all inherited from
+BaseComponent
+View all inherited from
+Frame
+Methods
+Method
+Signature
+Description
+Option
+(
+Name
+:
+string
+?
+)
+->
+Frame
+Can be used to seperately create options, use this if you want to access the option instances themselves. An example of use would be a dynamically updating playerlist.
+Remove
+(
+Index
+:
+number
+?
+)
+->
+nil
+,
+Can be used to remove options from the pop-up menu, this automatically removes it from the options list as well.
+View all inherited from
+Frame
+Events
+Event
+Signature
+Description
+ValueChanged
+((
+self
+:
+PopUpButton
+,
+value
+:
+number
+or
+{
+number
+})
+->
+unknown
+)
+?
+A Callback function that is triggered when the
+Value
+property has been modified.
+View all inherited from
+Frame
+Types
+type
+PopUpButtonProperties
+=
+Frame
+&
+{
+Options
+:
+{
+[
+number
+]:
+string
+}
+?
+,
+Expanded
+:
+boolean
+?
+,
+Maximum
+:
+number
+?
+,
+Value
+:
+(
+number
+|
+{
+number
+})
+?
+,
+ValueChanged
+:
+((
+self
+:
+PopUpButton
+,
+value
+:
+number
+|
+{
+number
+})
+->
+unknown
+)
+?
+,
+}
+type
+PopUpButton
+=
+BaseComponent
+&
+Components
+&
+PopUpButtonProperties
+&
+{
+Option
+:
+(
+Name
+:
+string
+?
+)
+->
+Frame
+,
+Remove
+:
+(
+Index
+:
+number
+?
+)
+->
+nil
+,
+}
+Function Signature
+function
+(
+self
+,
+properties
+:
+PopUpButtonProperties
+):
+PopUpButton
+Example
+local
+popUpButton
+=
+row
+:
+Right
+():
+PopUpButton
+({
+Options
+=
+{
+"Item One"
+,
+"Item Two"
+,
+},
+ValueChanged
+=
+function
+(
+self
+,
+value
+:
+number
+)
+print
+(
+"Value changed:"
+,
+self
+.
+Options
+[
+value
+])
+end
+,
+})
+print
+(
+popUpButton
+:
+IsA
+(
+"Frame"
+))
+--> true
+print
+(
+popUpButton
+.
+ClassName
+)
+--> "Frame"
+print
+(
+popUpButton
+.
+Type
+)
+--> "PopUpButton"
+popUpButton
+.
+Value
+=
+3
+--> Value changed: "Item Three"
+local
+itemThree
+=
+popUpButton
+:
+Option
+(
+"Item Three"
+)
+print
+(
+itemThree
+.
+ClassName
+)
+--> Frame
+popUpButton
+:
+Remove
+(
+13
+)
+Multi-select Example
+local
+multi
+=
+row
+:
+Right
+():
+PopUpButton
+({
+Options
+=
+{
+"One"
+,
+"Two"
+,
+"Three"
+,
+"Four"
+},
+Maximum
+=
+3
+,
+ValueChanged
+=
+function
+(
+self
+,
+value
+)
+-- `value` is ALWAYS a table of indices when `Maximum > 1` even if only 1 value is selected.
+print
+(
+"Selections:"
+)
+for
+_
+,
+idx
+in
+ipairs
+(
+value
+or
+{})
+do
+print
+(
+self
+.
+Options
+[
+idx
+])
+end
+end
+,
+})
+local
+five
+=
+multi
+:
+Option
+(
+"Five"
+)
+multi
+.
+Value
+=
+{
+1
+,
+3
+}
+Back to top
+Previous
+RadioButtonGroup
+Next
+PullDownButton
+
+--- SOURCE: Cascade_Components_PullDownButton.html ---
+
+PullDownButton - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+PullDownButton
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+PullDownButton
+A
+PullDownButton
+displays a menu of mutually exclusive options.
+Summary
+Properties
+Property
+Type
+Description
+Options
+{[
+number
+]:
+string
+}
+?
+You can use this table to pre-define options. Note that doing it this way will not give you access to the option instances themselves.
+Value
+number
+?
+The numeric index of the option to be selected.
+View all inherited from
+BaseComponent
+View all inherited from
+Frame
+Methods
+Method
+Signature
+Description
+Option
+(
+Name
+:
+string
+?
+)
+->
+Frame
+Can be used to seperately create options, use this if you want to access the option instances themselves.
+Remove
+(
+Index
+:
+number
+?
+)
+->
+nil
+,
+Can be used to remove options from the pull-down menu, this automatically removes it from the options list as well.
+View all inherited from
+Frame
+Events
+Event
+Signature
+Description
+ValueChanged
+((
+self
+:
+PullDownButton
+,
+value
+:
+string
+)
+->
+unknown
+)
+?
+A Callback function that is triggered when the
+Value
+property has been modified.
+View all inherited from
+Frame
+Types
+type
+PullDownButtonProperties
+=
+Frame
+&
+{
+Options
+:
+{
+[
+number
+]:
+string
+}
+?
+,
+Expanded
+:
+boolean
+?
+,
+Label
+:
+string
+?
+,
+Value
+:
+number
+?
+,
+ValueChanged
+:
+((
+self
+:
+PullDownButton
+,
+value
+:
+number
+)
+->
+unknown
+)
+?
+,
+}
+type
+PullDownButton
+=
+BaseComponent
+&
+Components
+&
+PullDownButtonProperties
+&
+{
+Option
+:
+(
+Name
+:
+string
+?
+)
+->
+Frame
+,
+Remove
+:
+(
+Index
+:
+number
+?
+)
+->
+nil
+,
+}
+Function Signature
+function
+(
+self
+,
+properties
+:
+PullDownButtonProperties
+):
+PullDownButton
+Example
+local
+pullDownButton
+=
+row
+:
+Right
+():
+PullDownButton
+({
+Options
+=
+{
+"Action One"
+,
+"Action Two"
+,
+},
+ValueChanged
+=
+function
+(
+self
+,
+value
+:
+number
+)
+print
+(
+"Action selected:"
+,
+self
+.
+Options
+[
+value
+])
+end
+,
+})
+print
+(
+pullDownButton
+:
+IsA
+(
+"Frame"
+))
+--> true
+print
+(
+pullDownButton
+.
+ClassName
+)
+--> "Frame"
+print
+(
+pullDownButton
+.
+Type
+)
+--> "PullDownButton"
+pullDownButton
+.
+Value
+=
+3
+--> Value changed: "Item Three"
+local
+itemThree
+=
+pullDownButton
+:
+Option
+(
+"Item Three"
+)
+print
+(
+itemThree
+.
+ClassName
+)
+--> Frame
+pullDownButton
+:
+Remove
+(
+13
+)
+Back to top
+Previous
+PopUpButton
+
+--- SOURCE: Cascade_Components_RadioButtonGroup.html ---
+
+RadioButtonGroup - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+RadioButtonGroup
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+RadioButtonGroup
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+RadioButtonGroup
+A
+RadioButtonGroup
+lets people choose an option from a set of mutually exclusive choices, using a circular indicator to show the selected option.
+Summary
+Properties
+Property
+Type
+Description
+Options
+{[
+number
+]:
+string
+}
+?
+You can use this table to pre-define options. Note that doing it this way will not give you access to the option instances themselves.
+Value
+number
+?
+The numeric index of the option to be selected.
+View all inherited from
+BaseComponent
+View all inherited from
+Frame
+Methods
+Method
+Signature
+Description
+Option
+(
+Name
+:
+string
+?
+)
+->
+Frame
+Can be used to seperately create options, use this if you want to access the option instances themselves. An example of use would be a dynamically updating playerlist.
+View all inherited from
+Frame
+Events
+Event
+Signature
+Description
+ValueChanged
+((
+self
+:
+RadioButtonGroup
+,
+value
+:
+string
+)
+->
+unknown
+)
+?
+A Callback function that is triggered when the
+Value
+property has been modified.
+View all inherited from
+Frame
+Types
+type
+RadioButtonGroupProperties
+=
+Frame
+&
+{
+Options
+:
+{[
+number
+]:
+string
+}
+?
+,
+Value
+:
+number
+?
+,
+ValueChanged
+:
+((
+self
+:
+RadioButtonGroup
+,
+value
+:
+number
+)
+->
+unknown
+)
+?
+,
+}
+type
+RadioButtonGroup
+=
+BaseComponent
+&
+Components
+&
+RadioButtonGroupProperties
+&
+{
+Option
+:
+(
+Name
+:
+string
+?
+)
+->
+Frame
+,
+}
+Function Signature
+function
+(
+self
+,
+properties
+:
+RadioButtonGroupProperties
+):
+RadioButtonGroup
+Example
+local
+radioButtonGroup
+=
+row
+:
+Right
+():
+RadioButtonGroup
+({
+Options
+=
+{
+"Option 1"
+,
+"Option 2"
+,
+},
+ValueChanged
+=
+function
+(
+self
+,
+value
+:
+number
+)
+print
+(
+"Value changed:"
+,
+self
+.
+Options
+[
+value
+])
+end
+,
+})
+print
+(
+radioButtonGroup
+:
+IsA
+(
+"Frame"
+))
+--> true
+print
+(
+radioButtonGroup
+.
+ClassName
+)
+--> "Frame"
+print
+(
+radioButtonGroup
+.
+Type
+)
+--> "RadioButtonGroup"
+radioButtonGroup
+.
+Value
+=
+2
+--> Value changed: "Option 2"
+local
+option3
+=
+radioButtonGroup
+:
+Option
+(
+"Option 3"
+)
+print
+(
+option3
+.
+ClassName
+)
+--> Frame
+radioButtonGroup
+.
+Value
+=
+3
+--> Value changed: "Option 3"
+Back to top
+Previous
+TextField
+Next
+PopUpButton
+
+--- SOURCE: Cascade_Components_Row.html ---
+
+Row - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+Row
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+Row
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+Row
+A
+Row
+is a horizontal container that splits its contents into
+Left
+and
+Right
+sections, providing a clear visual distinction between primary and secondary elements.
+Summary
+Properties
+Property
+Type
+Description
+SearchIndex
+string
+?
+A string that determines what the user has to type in to show this row in their search query
+View all inherited from
+BaseComponent
+View all inherited from
+Frame
+Methods
+Method
+Signature
+Description
+Left
+()
+->
+Row
+Returns a shallow clone of
+Row
+with the container set to the row's
+left
+container.
+Right
+()
+->
+Row
+Returns a shallow clone of
+Row
+with the container set to the row's
+right
+container.
+View all inherited from
+Frame
+Events
+View all inherited from
+Frame
+Types
+type
+RowProperties
+=
+Frame
+&
+{
+SearchIndex
+:
+string
+?
+,
+}
+type
+Row
+=
+BaseComponent
+&
+Components
+&
+RowProperties
+&
+{
+Left
+:
+(
+self
+:
+Row
+)
+->
+Row
+,
+Right
+:
+(
+self
+:
+Row
+)
+->
+Row
+,
+}
+Function Signature
+function
+(
+self
+,
+properties
+:
+RowProperties
+):
+Row
+Example
+local
+row
+=
+section
+:
+Row
+({
+SearchIndex
+=
+"Cool Row"
+})
+print
+(
+row
+:
+IsA
+(
+"Frame"
+))
+--> true
+print
+(
+row
+.
+ClassName
+)
+--> "Frame"
+print
+(
+row
+.
+Type
+)
+--> "Row"
+Back to top
+Previous
+Form
+Next
+VStack
+
+--- SOURCE: Cascade_Components_Section.html ---
+
+Section - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+Section
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Section
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+Section
+A
+Section
+organizes sidebar content by grouping related tabs together with optional disclosure.
+Summary
+Properties
+Property
+Type
+Description
+Title
+string
+?
+The displayed section title.
+Disclosure
+boolean
+?
+Whether the section's content should be hideable. Defaults to false.
+Expanded
+boolean
+?
+Whether the section should be expanded by default. Defaults to true.
+View all inherited from
+BaseComponent
+View all inherited from
+Frame
+Methods
+View all inherited from
+Frame
+Events
+View all inherited from
+Frame
+Types
+type
+SectionProperties
+=
+Frame
+&
+{
+Title
+:
+string
+?
+,
+Disclosure
+:
+boolean
+?
+,
+Expanded
+:
+boolean
+?
+,
+}
+type
+Section
+=
+BaseComponent
+&
+Components
+&
+SectionProperties
+Function Signature
+function
+(
+self
+,
+properties
+:
+SectionProperties
+):
+Section
+Example
+local
+section
+=
+window
+:
+Section
+({
+Disclosure
+=
+true
+,
+Title
+=
+"Settings"
+,
+})
+print
+(
+section
+:
+IsA
+(
+"Frame"
+))
+--> true
+print
+(
+section
+.
+ClassName
+)
+--> "Frame"
+print
+(
+section
+.
+Type
+)
+--> "Section"
+Back to top
+Previous
+Window
+Next
+Tab
+
+--- SOURCE: Cascade_Components_Slider.html ---
+
+Slider - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+Slider
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+Slider
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+Slider
+A
+Slider
+is a horizontal track with a control, called a thumb, that people can adjust between a minimum and maximum value.
+Summary
+Properties
+Property
+Type
+Description
+Minimum
+number
+?
+The minimum value the slider can go.
+Maximum
+number
+?
+The maximum value the slider can reach.
+Value
+number
+?
+The slider's current value.
+View all inherited from
+BaseComponent
+View all inherited from
+ImageLabel
+Methods
+View all inherited from
+ImageLabel
+Events
+Event
+Signature
+Description
+ValueChanged
+((
+self
+:
+Slider
+,
+value
+:
+number
+)
+->
+unknown
+)
+?
+A Callback function that is triggered when the
+Value
+property has been modified.
+View all inherited from
+ImageLabel
+Types
+type
+SliderProperties
+=
+ImageLabel
+&
+{
+Minimum
+:
+number
+?
+,
+Maximum
+:
+number
+?
+,
+Value
+:
+number
+?
+,
+ValueChanged
+:
+((
+self
+:
+Slider
+,
+value
+:
+number
+)
+->
+unknown
+)
+?
+,
+}
+type
+Slider
+=
+BaseComponent
+&
+Components
+&
+SliderProperties
+Function Signature
+function
+(
+self
+,
+properties
+:
+SliderProperties
+):
+Slider
+Example
+local
+slider
+=
+row
+:
+Right
+():
+Slider
+({
+Minimum
+=
+0
+,
+Maximum
+=
+10
+Value
+=
+5
+,
+ValueChanged
+=
+function
+(
+self
+,
+value
+:
+number
+)
+print
+(
+"Value changed:"
+,
+value
+)
+end
+,
+})
+print
+(
+slider
+:
+IsA
+(
+"ImageLabel"
+))
+--> true
+print
+(
+slider
+.
+ClassName
+)
+--> "ImageLabel"
+print
+(
+slider
+.
+Type
+)
+--> "Slider"
+slider
+.
+Value
++=
+1
+--> Value changed: 6
+Back to top
+Previous
+Stepper
+Next
+KeybindField
+
+--- SOURCE: Cascade_Components_Stepper.html ---
+
+Stepper - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+Stepper
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Stepper
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+Stepper
+A
+Stepper
+is a two-segment control that people use to increase or decrease an incremental value.
+Summary
+Properties
+Property
+Type
+Description
+Minimum
+number
+?
+The minimum value the stepper can drop.
+Maximum
+number
+?
+The maximum value the stepper can reach.
+Step
+number
+?
+The increment to increase by on increase/decrease.
+Fielded
+boolean
+?
+Whether the stepper should be attached to a editable field. Defaults to false.
+Value
+number
+?
+The stepper's current value.
+View all inherited from
+BaseComponent
+View all inherited from
+ImageLabel
+Methods
+Method
+Signature
+Description
+Increment
+()
+->
+nil
+This increments the
+Value
+of the stepper by the given step number.
+Decrement
+()
+->
+nil
+This decrements the
+Value
+of the stepper by the given step number.
+View all inherited from
+ImageLabel
+Events
+Event
+Signature
+Description
+ValueChanged
+((
+self
+:
+Stepper
+,
+value
+:
+number
+)
+->
+unknown
+)
+?
+A Callback function that is triggered when the
+Value
+property has been modified.
+View all inherited from
+ImageLabel
+Types
+type
+StepperProperties
+=
+ImageLabel
+&
+{
+Minimum
+:
+number
+?
+,
+Maximum
+:
+number
+?
+,
+Step
+:
+number
+?
+,
+Fielded
+:
+boolean
+?
+,
+Value
+:
+number
+?
+,
+ValueChanged
+:
+((
+self
+:
+Stepper
+,
+value
+:
+number
+)
+->
+unknown
+)
+?
+,
+}
+type
+Stepper
+=
+BaseComponent
+&
+Components
+&
+StepperProperties
+&
+{
+Increment
+:
+()
+->
+nil
+,
+Decrement
+:
+()
+->
+nil
+,
+}
+Function Signature
+function
+(
+self
+,
+properties
+:
+StepperProperties
+):
+Stepper
+Example
+local
+stepper
+=
+row
+:
+Right
+():
+Stepper
+({
+Minimum
+=
+0
+,
+Maximum
+=
+5
+,
+Step
+=
+0.1
+,
+Fielded
+=
+true
+,
+Value
+=
+3
+,
+ValueChanged
+=
+function
+(
+self
+,
+value
+:
+number
+)
+print
+(
+"Value changed:"
+,
+value
+)
+end
+,
+})
+print
+(
+stepper
+:
+IsA
+(
+"ImageLabel"
+))
+--> true
+print
+(
+stepper
+.
+ClassName
+)
+--> "ImageLabel"
+print
+(
+stepper
+.
+Type
+)
+--> "Stepper"
+stepper
+:
+Increment
+()
+--> Value changed: 3.01
+stepper
+.
+Value
++=
+1
+--> Value changed: 4.01
+Back to top
+Previous
+Toggle
+Next
+Slider
+
+--- SOURCE: Cascade_Components_Symbol.html ---
+
+Symbol - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+Symbol
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Symbol
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+Symbol
+A
+Symbol
+is a static image component mainly used to add visual context and branding to an interface.
+Summary
+Properties
+View all inherited from
+BaseComponent
+View all inherited from
+ImageLabel
+Methods
+View all inherited from
+ImageLabel
+Events
+View all inherited from
+ImageLabel
+Types
+type
+SymbolProperties
+=
+ImageLabel
+&
+{
+Style
+:
+(
+"Primary"
+|
+"Secondary"
+)
+?
+,
+}
+type
+Symbol
+=
+BaseComponent
+&
+Components
+&
+SymbolProperties
+Function Signature
+function
+(
+self
+,
+properties
+:
+SymbolProperties
+):
+Symbol
+Example
+local
+symbol
+=
+row
+:
+Right
+():
+Symbol
+({
+Image
+=
+cascade
+.
+Symbols
+.
+sunMin
+,
+})
+print
+(
+symbol
+:
+IsA
+(
+"ImageLabel"
+))
+--> true
+print
+(
+symbol
+.
+ClassName
+)
+--> "ImageLabel"
+print
+(
+symbol
+.
+Type
+)
+--> "Symbol"
+Back to top
+Previous
+Label
+Next
+Button
+
+--- SOURCE: Cascade_Components_Tab.html ---
+
+Tab - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+Tab
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+Tab
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+Tab
+A
+Tab
+separates content into different pages, and lets users navigate between them using a button on the sidebar.
+Summary
+Properties
+Property
+Type
+Description
+Title
+string
+?
+The tab and page's title.
+Icon
+string
+?
+The
+rbassetid://
+of the image to display. You can use cascade.Symbols for pre-made symbols.
+Indentation
+boolean
+?
+The tab indentation/How far right it is. This is automatically increased by
+1
+when you chain a tab on another tab.
+Selected
+boolean
+?
+Whether or not the tab is selected by default. Defaults to false.
+View all inherited from
+BaseComponent
+View all inherited from
+Frame
+Methods
+View all inherited from
+Frame
+Events
+View all inherited from
+Frame
+Types
+type
+TabProperties
+=
+Frame
+&
+{
+Title
+:
+string
+?
+,
+Icon
+:
+string
+?
+,
+Indentation
+:
+number
+?
+,
+Selected
+:
+boolean
+?
+,
+}
+type
+Tab
+=
+BaseComponent
+&
+Components
+&
+TabProperties
+Function Signature
+function
+(
+self
+,
+properties
+:
+TabProperties
+):
+Tab
+Example
+local
+tab
+=
+section
+:
+Tab
+({
+Selected
+=
+true
+,
+Title
+=
+"Tab"
+,
+Icon
+=
+cascade
+.
+Symbols
+.
+squareStack3dUp
+,
+})
+print
+(
+tab
+:
+IsA
+(
+"Frame"
+))
+--> true
+print
+(
+tab
+.
+ClassName
+)
+--> "Frame"
+print
+(
+tab
+.
+Type
+)
+--> "Tab"
+Back to top
+Previous
+Section
+Next
+PageSection
+
+--- SOURCE: Cascade_Components_TextField.html ---
+
+TextField - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+TextField
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+TextField
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+TextField
+A
+TextField
+is a rectangular area in which people enter or edit small, specific pieces of text.
+Summary
+Properties
+Property
+Type
+Description
+Placeholder
+string
+?
+The text placeholder to instruct users on how to interact with the component.
+Value
+Enum
+.
+Keycode
+?
+The text in the field.
+View all inherited from
+BaseComponent
+View all inherited from
+Frame
+Methods
+View all inherited from
+Frame
+Events
+Event
+Signature
+Description
+TextChanged
+((
+self
+:
+TextField
+,
+text
+:
+string
+)
+->
+unknown
+)
+?
+A Callback function that is triggered when the text field's text has been modified.
+ValueChanged
+((
+self
+:
+TextField
+,
+value
+:
+string
+)
+->
+unknown
+)
+?
+A Callback function that is triggered when the
+Value
+property has been modified.
+View all inherited from
+Frame
+Types
+type
+TextFieldProperties
+=
+Frame
+&
+{
+Placeholder
+:
+string
+?
+,
+Value
+:
+string
+?
+,
+TextChanged
+:
+((
+self
+:
+TextField
+,
+text
+:
+string
+)
+->
+unknown
+)
+?
+,
+ValueChanged
+:
+((
+self
+:
+TextField
+,
+value
+:
+string
+)
+->
+unknown
+)
+?
+,
+}
+type
+TextField
+=
+BaseComponent
+&
+Components
+&
+TextFieldProperties
+Function Signature
+function
+(
+self
+,
+properties
+:
+TextFieldProperties
+):
+TextField
+Example
+local
+textField
+=
+row
+:
+Right
+():
+TextField
+({
+Value
+=
+"Label"
+,
+ValueChanged
+=
+function
+(
+self
+,
+value
+:
+string
+)
+print
+(
+"Value changed:"
+,
+value
+)
+end
+,
+TextChanged
+=
+function
+(
+self
+,
+value
+:
+string
+)
+print
+(
+"Text changed:"
+,
+value
+)
+end
+,
+})
+print
+(
+textField
+:
+IsA
+(
+"Frame"
+))
+--> true
+print
+(
+textField
+.
+ClassName
+)
+--> "Frame"
+print
+(
+textField
+.
+Type
+)
+--> "TextField"
+textField
+.
+Value
+=
+"Hi"
+--> Value changed: "Hi"
+Back to top
+Previous
+KeybindField
+Next
+RadioButtonGroup
+
+--- SOURCE: Cascade_Components_TitleStack.html ---
+
+TitleStack - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+TitleStack
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+TitleStack
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+TitleStack
+A
+TitleStack
+is a vertical stack with title and subtitle label's that people can read, but not edit.
+Summary
+Properties
+Property
+Type
+Description
+Title
+string
+?
+The text content of the title label
+Subtitle
+string
+?
+The text content of the subtitle label. Subtitle becomes non visible if left nil.
+View all inherited from
+BaseComponent
+View all inherited from
+Frame
+Methods
+View all inherited from
+Frame
+Events
+View all inherited from
+Frame
+Types
+type
+TitleStackProperties
+=
+Frame
+&
+{
+Title
+:
+string
+?
+,
+Subtitle
+:
+string
+?
+,
+}
+type
+TitleStack
+=
+BaseComponent
+&
+Components
+&
+TitleStackProperties
+Function Signature
+function
+(
+self
+,
+properties
+:
+TitleStackProperties
+):
+TitleStack
+Example
+local
+titleStack
+=
+row
+:
+Left
+():
+TitleStack
+({
+Title
+=
+"Toggle (Off)"
+,
+Subtitle
+=
+"Lets people choose between a pair of opposing states, like on and off, using a different appearance to indicate each state."
+,
+})
+print
+(
+titleStack
+:
+IsA
+(
+"Frame"
+))
+--> true
+print
+(
+titleStack
+.
+ClassName
+)
+--> "Frame"
+print
+(
+titleStack
+.
+Type
+)
+--> "TitleStack"
+Back to top
+Previous
+HStack
+Next
+Label
+
+--- SOURCE: Cascade_Components_Toggle.html ---
+
+Toggle - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+Toggle
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Toggle
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+Toggle
+A
+Toggle
+lets people choose between a pair of opposing states, like on and off, using a different appearance to indicate each state.
+Summary
+Properties
+Property
+Type
+Description
+Value
+boolean
+?
+The toggle's state.
+false
+for off,
+true
+for on
+View all inherited from
+BaseComponent
+View all inherited from
+CanvasGroup
+Methods
+View all inherited from
+CanvasGroup
+Events
+Event
+Signature
+Description
+ValueChanged
+((
+self
+:
+Toggle
+,
+value
+:
+boolean
+)
+->
+unknown
+)
+?
+A callback function that is triggered when the
+Value
+property has been modified.
+View all inherited from
+CanvasGroup
+Types
+type
+ToggleProperties
+=
+CanvasGroup
+&
+{
+Value
+:
+boolean
+?
+,
+ValueChanged
+:
+((
+self
+:
+Toggle
+,
+value
+:
+boolean
+)
+->
+unknown
+)
+?
+,
+}
+type
+Toggle
+=
+BaseComponent
+&
+Components
+&
+ToggleProperties
+Function Signature
+function
+(
+self
+,
+properties
+:
+ToggleProperties
+):
+Toggle
+Example
+local
+toggle
+=
+row
+:
+Right
+():
+Toggle
+({
+Value
+=
+true
+,
+ValueChanged
+=
+function
+(
+self
+,
+value
+:
+boolean
+)
+print
+(
+"Value changed:"
+,
+value
+)
+end
+,
+})
+print
+(
+toggle
+:
+IsA
+(
+"CanvasGroup"
+))
+--> true
+print
+(
+toggle
+.
+ClassName
+)
+--> "CanvasGroup"
+print
+(
+toggle
+.
+Type
+)
+--> "Toggle"
+Back to top
+Previous
+Button
+Next
+Stepper
+
+--- SOURCE: Cascade_Components_VStack.html ---
+
+VStack - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+VStack
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+VStack
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+VStack
+A
+VStack
+is a frame that vertically sorts content.
+Summary
+Properties
+Property
+Type
+Description
+Padding
+UDim
+?
+The padding between objects.
+HorizontalAlignment
+Enum
+.
+HorizontalAlignment
+?
+The content X axis alignment.
+VerticalAlignment
+Enum
+.
+VerticalAlignment
+?
+The content Y axis alignment.
+View all inherited from
+BaseComponent
+View all inherited from
+Frame
+Methods
+View all inherited from
+Frame
+Events
+View all inherited from
+Frame
+Types
+type
+StackProperties
+=
+Frame
+&
+{
+Padding
+:
+UDim
+?
+,
+HorizontalAlignment
+:
+Enum
+.
+HorizontalAlignment
+?
+,
+VerticalAlignment
+:
+Enum
+.
+VerticalAlignment
+?
+,
+}
+type
+Stack
+=
+BaseComponent
+&
+Components
+&
+StackProperties
+Function Signature
+function
+(
+self
+,
+properties
+:
+StackProperties
+):
+Stack
+Example
+local
+vStack
+=
+row
+:
+Right
+():
+VStack
+()
+print
+(
+vStack
+:
+IsA
+(
+"Frame"
+))
+--> true
+print
+(
+vStack
+.
+ClassName
+)
+--> "Frame"
+print
+(
+vStack
+.
+Type
+)
+--> "VStack"
+Back to top
+Previous
+Row
+Next
+HStack
+
+--- SOURCE: Cascade_Components_Window.html ---
+
+Window - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+Window
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Window
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Components
+Window
+Window
+is a high-level container that handles all base interaction with the user for you. Usually this is the first component called and most components stem from here.
+Summary
+Properties
+Property
+Type
+Description
+Searching
+boolean
+?
+Shows a text field in the title bar which can be used to search pages for content.
+Draggable
+boolean
+?
+Enables window dragging via mouse or touch device.
+Resizable
+boolean
+?
+Enables resizing via sides or corners.
+Title
+string
+?
+Title displayed in the content titlebar.
+Subtitle
+string
+?
+Subtitle displayed under the title. Will be visually disabled if not defined.
+Maximized
+boolean
+?
+Should the window be maximized by default?
+Minimized
+boolean
+?
+Should the window be minimized by default?
+Dropshadow
+boolean
+?
+Enables a dropshadow effect on the window.
+UIBlur
+boolean
+?
+Applies a background blur effect to the sidebar.
+View all inherited from
+BaseComponent
+View all inherited from
+Frame
+Methods
+View all inherited from
+Frame
+Events
+View all inherited from
+Frame
+Types
+type
+WindowProperties
+=
+Frame
+&
+{
+Searching
+:
+boolean
+?
+,
+Draggable
+:
+boolean
+?
+,
+Resizable
+:
+boolean
+?
+,
+Title
+:
+string
+?
+,
+Subtitle
+:
+string
+?
+,
+Maximized
+:
+boolean
+?
+,
+Minimized
+:
+boolean
+?
+,
+-- These effects can be system resource intensive.
+Dropshadow
+:
+boolean
+?
+,
+UIBlur
+:
+boolean
+?
+,
+-- Detectable in some games.
+}
+type
+Window
+=
+BaseComponent
+&
+Components
+&
+WindowProperties
+Function Signature
+function
+(
+self
+,
+properties
+:
+WindowProperties
+):
+Window
+Example
+local
+window
+=
+app
+:
+Window
+({
+Title
+=
+"Cascade"
+,
+Subtitle
+=
+"This is my subtitle."
+,
+})
+print
+(
+window
+:
+IsA
+(
+"Frame"
+))
+--> true
+print
+(
+window
+.
+ClassName
+)
+--> "Frame"
+print
+(
+window
+.
+Type
+)
+--> "Window"
+Back to top
+Previous
+Base Component
+Next
+Section
+
+--- SOURCE: Cascade_Getting%20Started_example.html ---
+
+Example - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+Example
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Example
+Table of contents
+Creating a basic app
+Code
+Result
+Adding a settings page
+Code
+Result
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Creating a basic app
+Code
+Result
+Adding a settings page
+Code
+Result
+Welcome
+Getting Started
+Example
+View a example application that can be made with Cascade.
+Note
+You can view a larger test application here which has full keybind minimization and mobile resize already added:
+tests/test.luau
+Creating a basic app
+Code
+-- (1)
+-- Create our main application.
+local
+app
+=
+cascade
+.
+New
+({
+Theme
+=
+cascade
+.
+Themes
+.
+Light
+})
+do
+-- Make the main window
+local
+window
+=
+app
+:
+Window
+({
+Title
+=
+"My Window"
+,
+Subtitle
+=
+"My window"
+,
+})
+do
+-- Make a static tab section
+local
+section
+=
+window
+:
+Section
+({
+Title
+=
+"Section title"
+})
+do
+-- Make our main tab
+local
+tab
+=
+section
+:
+Tab
+({
+Selected
+=
+true
+,
+Title
+=
+"Main"
+,
+Icon
+=
+cascade
+.
+Symbols
+.
+squareStack3dUp
+,
+})
+do
+local
+form
+=
+tab
+:
+Form
+()
+do
+-- Make the toggle
+local
+row
+=
+form
+:
+Row
+()
+-- You can of course add a wrapper to simplify creating page components if you only want a title stack and a component to go along.
+row
+:
+Left
+():
+TitleStack
+({
+Title
+=
+"Toggle"
+,
+Subtitle
+=
+"My toggle"
+,
+})
+row
+:
+Right
+():
+Toggle
+()
+end
+do
+-- Make the button
+local
+row
+=
+form
+:
+Row
+()
+row
+:
+Left
+():
+TitleStack
+({
+Title
+=
+"Button"
+,
+Subtitle
+=
+"My button"
+,
+})
+row
+:
+Right
+():
+Button
+({
+Label
+=
+"Click me"
+})
+end
+end
+end
+end
+end
+This assumes you already have cascade imported and defined as
+cascade
+above this.
+Result
+Adding a settings page
+Code
+Add this below the existing tab.
+do
+-- Window
+local
+tab
+=
+section
+:
+Tab
+({
+Title
+=
+"Window"
+,
+Icon
+=
+cascade
+.
+Symbols
+.
+sidebarLeft
+,
+})
+do
+-- Appearance
+local
+form
+=
+tab
+:
+PageSection
+({
+Title
+=
+"Appearance"
+}):
+Form
+()
+-- (1)
+do
+-- Dark mode
+local
+row
+=
+form
+:
+Row
+({
+SearchIndex
+=
+"Dark mode"
+,
+})
+row
+:
+Left
+():
+TitleStack
+({
+Title
+=
+"Dark mode"
+,
+Subtitle
+=
+"Dark Mode is a application appearance setting that uses a dark color palette to provide a comfortable viewing experience tailored for low-light environments."
+,
+})
+row
+:
+Right
+():
+Toggle
+({
+Value
+=
+app
+.
+Theme
+==
+cascade
+.
+Themes
+.
+Dark
+,
+ValueChanged
+=
+function
+(
+self
+,
+value
+:
+boolean
+)
+app
+.
+Theme
+=
+value
+and
+cascade
+.
+Themes
+.
+Dark
+or
+cascade
+.
+Themes
+.
+Light
+end
+,
+})
+end
+end
+do
+-- Input
+local
+form
+=
+tab
+:
+PageSection
+({
+Title
+=
+"Input"
+}):
+Form
+()
+do
+-- Searching
+local
+row
+=
+form
+:
+Row
+({
+SearchIndex
+=
+"Searchable"
+,
+})
+row
+:
+Left
+():
+TitleStack
+({
+Title
+=
+"Searchable"
+,
+Subtitle
+=
+"Allows pages to be searched using a text field in the title bar."
+,
+})
+row
+:
+Right
+():
+Toggle
+({
+Value
+=
+window
+.
+Searching
+,
+ValueChanged
+=
+function
+(
+self
+,
+value
+:
+boolean
+)
+window
+.
+Searching
+=
+value
+end
+,
+})
+end
+do
+-- Draggable
+local
+row
+=
+form
+:
+Row
+({
+SearchIndex
+=
+"Draggable"
+,
+})
+row
+:
+Left
+():
+TitleStack
+({
+Title
+=
+"Draggable"
+,
+Subtitle
+=
+"Allows users to move the window with a mouse or touch device."
+,
+})
+row
+:
+Right
+():
+Toggle
+({
+Value
+=
+window
+.
+Draggable
+,
+ValueChanged
+=
+function
+(
+self
+,
+value
+:
+boolean
+)
+window
+.
+Draggable
+=
+value
+end
+,
+})
+end
+do
+-- Resizable
+local
+row
+=
+form
+:
+Row
+({
+SearchIndex
+=
+"Resizable"
+,
+})
+row
+:
+Left
+():
+TitleStack
+({
+Title
+=
+"Resizable"
+,
+Subtitle
+=
+"Allows users to resize the window with a mouse or touch device."
+,
+})
+row
+:
+Right
+():
+Toggle
+({
+Value
+=
+window
+.
+Resizable
+,
+ValueChanged
+=
+function
+(
+self
+,
+value
+:
+boolean
+)
+window
+.
+Resizable
+=
+value
+end
+,
+})
+end
+end
+do
+-- Effects
+local
+form
+=
+tab
+:
+PageSection
+({
+Title
+=
+"Effects"
+,
+Subtitle
+=
+"These effects may be resource intensive across different systems."
+,
+}):
+Form
+()
+do
+-- Dropshadow
+local
+row
+=
+form
+:
+Row
+({
+SearchIndex
+=
+"Dropshadow"
+,
+})
+row
+:
+Left
+():
+TitleStack
+({
+Title
+=
+"Dropshadow"
+,
+Subtitle
+=
+"Enables a dropshadow effect on the window."
+,
+})
+row
+:
+Right
+():
+Toggle
+({
+Value
+=
+window
+.
+Dropshadow
+,
+ValueChanged
+=
+function
+(
+self
+,
+value
+:
+boolean
+)
+window
+.
+Dropshadow
+=
+value
+end
+,
+})
+end
+do
+-- UI Blur
+local
+row
+=
+form
+:
+Row
+({
+SearchIndex
+=
+"Background blur"
+,
+})
+row
+:
+Left
+():
+TitleStack
+({
+Title
+=
+"Background blur"
+,
+Subtitle
+=
+"Enables a UI background blur effect on the window. This can be detectable in some games."
+,
+})
+row
+:
+Right
+():
+Toggle
+({
+Value
+=
+window
+.
+UIBlur
+,
+ValueChanged
+=
+function
+(
+self
+,
+value
+:
+boolean
+)
+window
+.
+UIBlur
+=
+value
+end
+,
+})
+end
+end
+end
+You can create a page section to organize forms, which helps the reader quickly scan over content in a tab to see what they need to do.
+Result
+Back to top
+Previous
+App
+Next
+Base Component
+
+--- SOURCE: Cascade_Getting%20Started_importing-the-library.html ---
+
+Importing the Library - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+Importing the Library
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+Importing the Library
+Table of contents
+Pre-built releases
+Over HTTP
+Local Build
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Pre-built releases
+Over HTTP
+Local Build
+Welcome
+Getting Started
+Importing the Library
+Note
+You can clone the entire Cascade repo into your project with something
+similar
+to wally, but there isn't currently a package manager that I know of which smoothly works with non roblox-dependent projects.
+Pre-built releases
+Cascade also has pre-built
+luau
+modules.
+Over HTTP
+This method will download the release dynamically using HttpGet.
+local
+function
+import
+(
+owner
+,
+repo
+,
+version
+,
+file
+)
+local
+tag
+=
+(
+version
+==
+"latest"
+and
+"latest/download"
+or
+"download/"
+..
+version
+)
+return
+loadstring
+(
+game
+:
+HttpGetAsync
+((
+"https://github.com/%s/%s/releases/%s/%s"
+):
+format
+(
+owner
+,
+repo
+,
+tag
+,
+file
+)),
+file
+)()
+end
+local
+cascade
+=
+import
+(
+"biggaboy212"
+,
+"Cascade"
+,
+"latest"
+,
+"dist.luau"
+)
+-- If you want to use a specific release (i.e, beta releases), replace 'latest' with it's release tag.
+Local Build
+Download a valid release:
+Cascade Releases
+Place the
+luau
+module into your project (e.g., under
+packages/
+).
+Back to top
+Previous
+Interface Guidelines
+Next
+The API
+
+--- SOURCE: Cascade_Getting%20Started_interface-guidelines.html ---
+
+Interface Guidelines - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+Interface Guidelines
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Interface Guidelines
+Table of contents
+Why is this important?
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Why is this important?
+Welcome
+Getting Started
+Interface Guidelines
+For more information about Cascade’s Human Interface Guidelines, refer to
+Apple’s Official HIG documentation
+, which Cascade is based on.
+Why is this important?
+Following established interface guidelines is essential to building high-quality user interfaces. While visually appealing components are important, it's equally critical to
+understand how and when to use them.
+Cascade adopts Apple's Human Interface Guidelines to promote consistency, clarity, and intentional design.
+By understanding these principles
+, you can create polished interfaces that are consistent with a user's everyday interface navigation experience. Knowing how to use components correctly leads to better user experiences and more maintainable UI systems.
+Back to top
+Previous
+Welcome
+Next
+Importing the Library
+
+--- SOURCE: Cascade_Getting%20Started_The%20API.html ---
+
+The API - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+The API
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Welcome
+Getting Started
+The API
+The API
+Summary
+Properties
+Property
+Type
+Description
+Themes
+{ Dark: { [any]: any }, Light { [any]: any }
+[Read-only]
+A list of predefined themes, which by default includes
+Dark
+and
+Light
+.
+Symbols
+{ [string]: string }
+[Read-only]
+A large list of symbols (Exported from Apple SF Symbols).
+Tip
+You can view all symbols here:
+https://sf-symbols-one.vercel.app/
+Methods
+Method
+Arguments
+Description
+Returns
+New
+properties: AppProperties
+Creates a new
+App
+, this returns every component you can then call and will appear on screen.
+App
+Back to top
+Previous
+Importing the Library
+Next
+App
+
+--- SOURCE: Cascade_Getting%20Started_The%20API_app.html ---
+
+App - Cascade Developer Documentation
+Skip to content
+Cascade Developer Documentation
+App
+Initializing search
+biggaboy212/Cascade
+Cascade Developer Documentation
+biggaboy212/Cascade
+Welcome
+Getting Started
+Getting Started
+Interface Guidelines
+Importing the Library
+The API
+The API
+App
+App
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Example
+Components
+Components
+Window
+Section
+Tab
+PageSection
+Form
+Row
+VStack
+HStack
+TitleStack
+Label
+Symbol
+Button
+Toggle
+Stepper
+Slider
+KeybindField
+TextField
+RadioButtonGroup
+PopUpButton
+PullDownButton
+Table of contents
+Summary
+Properties
+Methods
+Events
+Types
+Function Signature
+Example
+Welcome
+Getting Started
+The API
+App
+You can create a new app by calling the
+New
+method from the Cascade API. This returns a custom object merged with a
+ScreenGui
+.
+The returned object exposes all built-in
+Components
+such as
+Window
+,
+Tab
+, and others for UI composition.
+Summary
+Properties
+Property
+Type
+Description
+WindowPill
+boolean?
+Whether or not the window minimize/restore pill should be visible.
+Theme
+Theme?
+Defines the color pallete used by the overall application.
+View all inherited from ScreenGui
+Methods
+View all inherited from ScreenGui
+Events
+View all inherited from ScreenGui
+Types
+type
+AppProperties
+=
+ScreenGui
+&
+{
+WindowPill
+:
+boolean
+?
+,
+Theme
+:
+Theme
+?
+,
+}
+type
+App
+=
+AppProperties
+&
+Components
+Function Signature
+function
+(
+self
+,
+properties
+:
+AppProperties
+):
+App
+Example
+1
+2
+3
+4
+local
+app
+=
+cascade
+.
+New
+({
+WindowPill
+=
+true
+,
+Theme
+=
+cascade
+.
+Themes
+.
+Light
+})
+Back to top
+Previous
+The API
+Next
+Example

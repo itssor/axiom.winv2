@@ -1,0 +1,2907 @@
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Teams = game:GetService("Teams")
+local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local SoundService = game:GetService("SoundService")
+local Debris = game:GetService("Debris")
+local TweenService = game:GetService("TweenService")
+local UserGameSettings = UserSettings():GetService("UserGameSettings")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+task.wait(0.1)
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+local MM2_PLACE_IDS = { [142823291] = true, [335132309] = true }
+local isMM2 = MM2_PLACE_IDS[game.PlaceId] == true
+
+local function hasKnife(charOrBackpack)
+    for _, obj in ipairs(charOrBackpack:GetChildren()) do
+        if obj:IsA("Tool") then
+            local n = obj.Name:lower()
+            if n:find("knife") or n:find("blade") then return true end
+        end
+    end
+    return false
+end
+local function hasGun(charOrBackpack)
+    for _, obj in ipairs(charOrBackpack:GetChildren()) do
+        if obj:IsA("Tool") then
+            local n = obj.Name:lower()
+            if n:find("gun") or n:find("revolver") or n:find("pistol") then return true end
+        end
+    end
+    return false
+end
+function _G.getMurderer()
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p == LocalPlayer then continue end
+        local char = p.Character
+        if char and hasKnife(char) then return p end
+        local bp = p:FindFirstChild("Backpack")
+        if bp and hasKnife(bp) then return p end
+    end
+    return nil
+end
+function _G.getSheriff()
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p == LocalPlayer then continue end
+        local char = p.Character
+        if char and hasGun(char) then return p end
+        local bp = p:FindFirstChild("Backpack")
+        if bp and hasGun(bp) then return p end
+    end
+    return nil
+end
+local droppedGunCache, droppedGunCacheTime = nil, 0
+local DROPPED_GUN_CACHE_T = 0.15
+function _G.getDroppedGun()
+    local t = tick()
+    if droppedGunCache and (t - droppedGunCacheTime) < DROPPED_GUN_CACHE_T then
+        return droppedGunCache
+    end
+    droppedGunCache = nil
+    droppedGunCacheTime = t
+    for _, child in ipairs(Workspace:GetChildren()) do
+        if child:IsA("Model") then
+            local n = child.Name:lower()
+            if (n:find("gun") or n:find("revolver")) and child:FindFirstChild("Handle") then
+                local root = child.PrimaryPart or child:FindFirstChild("Handle")
+                if root and root:IsA("BasePart") then
+                    droppedGunCache = root
+                    return root
+                end
+            end
+        end
+    end
+    return nil
+end
+
+local UIState = {
+    CascadeWindowInstance = nil,
+    CascadeTheme = "Dark"
+}
+
+local AxiomConnections = {}
+local function AxiomTrackConnection(c)
+    table.insert(AxiomConnections, c)
+    return c
+end
+local function AxiomDisconnectAll()
+    for _, conn in ipairs(AxiomConnections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    table.clear(AxiomConnections)
+end
+_G.AxiomTrackConnection = AxiomTrackConnection
+
+local SpyState = {
+    TargetName = nil,
+    Spectating = false,
+    PrevCameraType = nil,
+    PrevCameraSubject = nil
+}
+
+local rotationCache = {
+    mouseBehavior = Enum.MouseBehavior.Default,
+    mouseIconEnabled = true,
+    shiftLockActive = false,
+    cameraType = Camera.CameraType,
+    cameraSubject = Camera.CameraSubject,
+    fov = Camera.FieldOfView
+}
+
+local defaultConfig = {
+    Aimbot = {
+        Enabled = false,
+        Active = false,
+        VisualBT = false,
+        Method = "Mouse",
+        Smoothness = 5,
+        FOV = 100,
+        FOVColor = Color3.fromRGB(255, 255, 255),
+        FOVThickness = 1,
+        FOVFilled = false,
+        TargetPart = "Head",
+        Key = Enum.UserInputType.MouseButton2,
+        Mode = "Hold",
+        WallCheck = false,
+        TeamCheck = false,
+        FOVCircle = false,
+        SnapLines = false,
+        SnapLineColor = Color3.fromRGB(255, 255, 255),
+        SnapLineThickness = 1,
+        TargetHUD = true,
+        Prioritization = "Closest Crosshair" 
+    },
+    Visuals = {
+        Enabled = false,
+        TeamCheck = false,
+        DistanceLimit = 1000,
+        TextSize = 13,
+        InfoPosition = "Top",
+        HealthMode = "Text",
+        HealthBarSide = "Left",
+
+        Box2D = false,
+        Box2DColor = Color3.fromRGB(255, 255, 255),
+        Box2DTransparency = 1,
+        Box3D = false,
+        Box3DColor = Color3.fromRGB(255, 255, 255),
+        Box3DTransparency = 1,
+
+        Skeleton = false,
+        SkeletonColor = Color3.fromRGB(255, 255, 255),
+        SkeletonTransparency = 1,
+        Tracer = false,
+        TracerColor = Color3.fromRGB(255, 255, 255),
+        TracerTransparency = 1,
+        TracerOrigin = "Bottom",
+
+        HeadDot = false,
+        HeadDotColor = Color3.fromRGB(255, 255, 255),
+        HeadDotTransparency = 1,
+        HeadDotRadius = 3,
+
+        Name = false,
+        DisplayName = false,
+        Distance = false,
+        Health = false,
+        ToolText = false,
+        TextColor = Color3.fromRGB(255, 255, 255),
+        TextTransparency = 1,
+
+        Chams = false,
+        ChamsColor = Color3.fromRGB(0, 122, 255),
+        ChamsTransparency = 0.5,
+        ChamsMethod = "Highlight",
+        ToolChams = false,
+        ToolColor = Color3.fromRGB(255, 255, 255),
+        ToolTransparency = 0.5,
+
+        OffscreenArrows = false,
+        OffscreenArrowColor = Color3.fromRGB(255, 255, 255),
+        OffscreenArrowSize = 16,
+        OffscreenArrowTransparency = 1,
+
+        CenterDot = false,
+        CenterDotColor = Color3.fromRGB(255, 255, 255),
+        CenterDotRadius = 2
+    },
+    Hitbox = {
+        Enabled = false,
+        ExpandSize = 1.6,
+        Transparency = 0.6,
+        Color = Color3.fromRGB(255, 0, 0),
+        OutlineColor = Color3.fromRGB(255, 255, 255),
+        ShowOutline = true,
+        Head = true,
+        Torso = true
+    },
+    Movement = {
+        SpeedEnabled = false,
+        SpeedActive = false,
+        SpeedValue = 16,
+        SpeedKey = Enum.KeyCode.V,
+        SpeedMode = "Toggle",
+        SpeedMethod = "CFrame",
+        
+        FlyEnabled = false,
+        FlyActive = false,
+        FlySpeed = 50,
+        FlyKey = Enum.KeyCode.F,
+        FlyMode = "Toggle",
+        FlyMethod = "Velocity",
+        
+        Noclip = false,
+        InfJump = false,
+        
+        FreecamEnabled = false,
+        FreecamActive = false,
+        FreecamSpeed = 1,
+        FreecamKey = Enum.KeyCode.Unknown,
+        FreecamMode = "Toggle",
+        FreecamSmoothness = 0.25,
+        FreecamFreeCursor = true,
+
+        Bhop = false,
+        TPWalk = false,
+        TPStep = 3,
+        TPRate = 0.05,
+        Spinbot = false,
+        SpinSpeed = 360
+    },
+    Misc = {
+        DarkMode = true,
+        FOVEnabled = false,
+        FOV = 90,
+        AmbientEnabled = false,
+        AmbientColor = Color3.fromRGB(255, 255, 255),
+        SkyboxEnabled = false,
+        SkyboxID = "142283166", 
+        FullBright = false,
+        ZoomEnabled = false,
+        ZoomActive = false,
+        ZoomKey = Enum.KeyCode.Z,
+        ZoomMethod = "FOV",
+        ZoomAmount = 30,
+        ZoomMode = "Toggle",
+        StreamerMode = false,
+        SpoofName = "Anonymous",
+        MySpoofName = "Anonymous",
+        NotificationMethod = "Window Alert",
+        NotificationPosition = "TopRight",
+        NotificationDuration = 3,
+        NotificationAnimate = true,
+        NotificationSound = "tf2 menu",
+        NotificationVolume = 1,
+        WatermarkEnabled = true,
+        WatermarkPosition = "TopLeft",
+        UIPreset = "Default"
+    },
+    MM2 = {
+        SilentAimEnabled = false,
+        SilentAimKey = Enum.KeyCode.X,
+        SilentAimMode = "Hold",
+        KillAllEnabled = false,
+        KillAllKey = Enum.KeyCode.C,
+        KillAllMode = "Hold",
+        GunESP = false,
+        MurdererESP = true,
+        SheriffESP = true,
+        RoleESP = true,
+        GunESPColor = Color3.fromRGB(0, 255, 0),
+        MurdererESPColor = Color3.fromRGB(255, 0, 0),
+        SheriffESPColor = Color3.fromRGB(0, 100, 255),
+        InnocentESPColor = Color3.fromRGB(200, 200, 200),
+        TpToGun = false,
+        AutoGunGrab = false,
+        TpToMurderer = false,
+        TpToSheriff = false,
+        AutoFarmCoins = false
+    }
+}
+
+local _G_Config = table.clone(defaultConfig)
+
+local function deepClone(t)
+    if type(t) ~= "table" then return t end
+    local c = {}
+    for k, v in pairs(t) do
+        c[k] = (type(v) == "table" and v.ClassName == nil) and deepClone(v) or v
+    end
+    return c
+end
+
+local function validateConfig(data)
+    if type(data) ~= "table" then return table.clone(defaultConfig) end
+    local out = deepClone(defaultConfig)
+    local function merge(src, dest, def)
+        for k, v in pairs(def) do
+            if type(v) == "table" and v.ClassName == nil then
+                if type(src[k]) == "table" then
+                    merge(src[k], dest[k], v)
+                end
+            elseif src[k] ~= nil then
+                dest[k] = src[k]
+            end
+        end
+    end
+    merge(data, out, defaultConfig)
+    local c = out
+    local function clampNum(val, lo, hi)
+        local n = tonumber(val)
+        if n == nil then return nil end
+        return math.clamp(n, lo, hi)
+    end
+    if c.Aimbot then
+        c.Aimbot.FOV = clampNum(c.Aimbot.FOV, 20, 360) or c.Aimbot.FOV
+        c.Aimbot.Smoothness = clampNum(c.Aimbot.Smoothness, 1, 20) or c.Aimbot.Smoothness
+    end
+    if c.Visuals then
+        c.Visuals.DistanceLimit = clampNum(c.Visuals.DistanceLimit, 0, 10000) or c.Visuals.DistanceLimit
+        c.Visuals.TextSize = clampNum(c.Visuals.TextSize, 8, 32) or c.Visuals.TextSize
+    end
+    if c.Movement then
+        c.Movement.SpeedValue = clampNum(c.Movement.SpeedValue, 1, 200) or c.Movement.SpeedValue
+        c.Movement.FlySpeed = clampNum(c.Movement.FlySpeed, 10, 500) or c.Movement.FlySpeed
+        c.Movement.FreecamSpeed = clampNum(c.Movement.FreecamSpeed, 0.1, 10) or c.Movement.FreecamSpeed
+        c.Movement.FreecamSmoothness = clampNum(c.Movement.FreecamSmoothness, 0.05, 0.5) or c.Movement.FreecamSmoothness
+        c.Movement.TPStep = clampNum(c.Movement.TPStep, 1, 10) or c.Movement.TPStep
+        c.Movement.TPRate = clampNum(c.Movement.TPRate, 0.01, 1) or c.Movement.TPRate
+        c.Movement.SpinSpeed = clampNum(c.Movement.SpinSpeed, 0, 720) or c.Movement.SpinSpeed
+    end
+    if c.Misc then
+        c.Misc.NotificationDuration = clampNum(c.Misc.NotificationDuration, 0.25, 30) or c.Misc.NotificationDuration
+        c.Misc.ZoomAmount = clampNum(c.Misc.ZoomAmount, 5, 120) or c.Misc.ZoomAmount
+    end
+    return out
+end
+
+local AxiomNotify
+
+local function AxiomResetSettings()
+    for k, v in pairs(defaultConfig) do
+        _G_Config[k] = table.clone(v)
+    end
+    AxiomNotify("Axiom.win", "Settings have been reset.", _G_Config)
+end
+
+local function AxiomResetSection(sectionKey, label)
+    local defaults = defaultConfig[sectionKey]
+    if defaults then
+        _G_Config[sectionKey] = table.clone(defaults)
+        AxiomNotify("Axiom.win", (label or sectionKey).." reset.", _G_Config)
+    end
+end
+
+local function getKeybindConflictNames(key, excludeFeature)
+    if key == nil then return {} end
+    if key == Enum.KeyCode.Unknown then return {} end
+    local list = {}
+    local function sameKey(a, b)
+        if a == nil or b == nil then return false end
+        return a == b or (tostring(a) == tostring(b))
+    end
+    if excludeFeature ~= "Aimbot" and sameKey(_G_Config.Aimbot and _G_Config.Aimbot.Key, key) then table.insert(list, "Aimbot") end
+    if excludeFeature ~= "Speed" and sameKey(_G_Config.Movement and _G_Config.Movement.SpeedKey, key) then table.insert(list, "Speed") end
+    if excludeFeature ~= "Fly" and sameKey(_G_Config.Movement and _G_Config.Movement.FlyKey, key) then table.insert(list, "Fly") end
+    if excludeFeature ~= "Freecam" and sameKey(_G_Config.Movement and _G_Config.Movement.FreecamKey, key) then table.insert(list, "Freecam") end
+    if excludeFeature ~= "Zoom" and sameKey(_G_Config.Misc and _G_Config.Misc.ZoomKey, key) then table.insert(list, "Zoom") end
+    return list
+end
+
+local function getConfigFolder()
+    local folder = "axiom_configs"
+    if makefolder and not isfolder(folder) then
+        pcall(function() makefolder(folder) end)
+    end
+    return folder
+end
+
+local function sanitizeName(name)
+    local n = tostring(name or ""):gsub("[^%w_%-%s]", ""):gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+    return n
+end
+
+local function configPath(name)
+    return getConfigFolder().."/"..name..".json"
+end
+
+local function getBackupsFolder()
+    local folder = getConfigFolder().."/backups"
+    if makefolder and not isfolder(folder) then
+        pcall(function() makefolder(folder) end)
+    end
+    return folder
+end
+
+local function saveConfig(name, overwrite)
+    if not writefile or not isfile then
+        AxiomNotify("Axiom.win", "Config save not supported.", _G_Config)
+        return
+    end
+    local n = sanitizeName(name)
+    if n == "" then
+        AxiomNotify("Axiom.win", "Config name required.", _G_Config)
+        return
+    end
+    local path = configPath(n)
+    if (not overwrite) and isfile(path) then
+        AxiomNotify("Axiom.win", "Config exists. Use overwrite.", _G_Config)
+        return
+    end
+    if overwrite and isfile(path) and readfile then
+        pcall(function()
+            local backupContent = readfile(path)
+            local backupPath = getBackupsFolder().."/"..n.."_"..tostring(math.floor(tick()))..".json"
+            writefile(backupPath, backupContent)
+        end)
+    end
+    local json = HttpService:JSONEncode(_G_Config)
+    writefile(path, json)
+    AxiomNotify("Axiom.win", "Saved config: "..n, _G_Config)
+end
+
+local function loadConfig(name)
+    if not readfile or not isfile then
+        AxiomNotify("Axiom.win", "Config load not supported.", _G_Config)
+        return
+    end
+    local n = sanitizeName(name)
+    if n == "" then
+        AxiomNotify("Axiom.win", "Config name required.", _G_Config)
+        return
+    end
+    local path = configPath(n)
+    if not isfile(path) then
+        AxiomNotify("Axiom.win", "Config not found.", _G_Config)
+        return
+    end
+    local ok, data = pcall(function()
+        return HttpService:JSONDecode(readfile(path))
+    end)
+    if ok and type(data) == "table" then
+        local validated = validateConfig(data)
+        for k, v in pairs(validated) do
+            _G_Config[k] = v
+        end
+        AxiomNotify("Axiom.win", "Loaded config: "..n, _G_Config)
+    else
+        AxiomNotify("Axiom.win", "Config load failed.", _G_Config)
+    end
+end
+
+local function exportConfig()
+    local json = HttpService:JSONEncode(_G_Config)
+    if setclipboard then
+        pcall(function() setclipboard(json) end)
+    end
+    AxiomNotify("Axiom.win", "Config copied to clipboard.", _G_Config)
+    return json
+end
+
+local function importConfig(json)
+    local ok, data = pcall(function()
+        return HttpService:JSONDecode(json)
+    end)
+    if ok and type(data) == "table" then
+        local validated = validateConfig(data)
+        for k, v in pairs(validated) do
+            _G_Config[k] = v
+        end
+        AxiomNotify("Axiom.win", "Config imported.", _G_Config)
+    else
+        AxiomNotify("Axiom.win", "Invalid config JSON.", _G_Config)
+    end
+end
+
+local function listConfigs()
+    if not listfiles then
+        return {}
+    end
+    local folder = getConfigFolder()
+    local items = {}
+    for _, f in ipairs(listfiles(folder)) do
+        local name = f:match("([^/\\]+)%.json$")
+        if name then
+            table.insert(items, name)
+        end
+    end
+    table.sort(items)
+    return items
+end
+
+local function getUIPresetAccent(preset)
+    if preset == "Emerald" then
+        return Color3.fromRGB(40, 200, 120)
+    elseif preset == "Nebula" then
+        return Color3.fromRGB(150, 90, 255)
+    elseif preset == "Blood" then
+        return Color3.fromRGB(220, 40, 40)
+    end
+    return nil
+end
+
+local SoundRegistry = {
+    ["hl2 grab"] = "rbxassetid://81144155428330",
+    ["tf2 warn"] = "rbxassetid://123366544786241",
+    ["hl2 ui"] = "rbxassetid://119449453189357",
+    ["discord"] = "rbxassetid://18501882001",
+    ["tf2 apples"] = "rbxassetid://18888469782",
+    ["og roblox"] = "rbxassetid://137171473068941",
+    ["sl noti"] = "rbxassetid://8486683243",
+    ["gta"] = "rbxassetid://88243474733896",
+    ["tf2 menu"] = "rbxassetid://9061754547"
+}
+
+local function AxiomSoundHandler(Name, volume)
+    local assetId = SoundRegistry[Name]
+    if assetId then
+        local sound = Instance.new("Sound")
+        sound.SoundId = assetId
+        sound.Parent = SoundService
+        sound.Volume = math.clamp(tonumber(volume) or 1, 0, 1)
+        sound:Play()
+        Debris:AddItem(sound, 5)
+    end
+end
+
+AxiomNotify = function(title, text, _G_Config)
+    local misc = _G_Config and _G_Config.Misc
+    if not misc then return end
+    local method = misc.NotificationMethod or "Window Alert"
+    local position = misc.NotificationPosition or "TopRight"
+    local paddingX, paddingY = 20, 20
+    local notificationDuration = math.clamp(tonumber(misc.NotificationDuration) or 3, 0.25, 30)
+    local animate = misc.NotificationAnimate ~= false
+    local soundName, soundVolume = misc.NotificationSound, misc.NotificationVolume
+    if method ~= "Window Alert" and method ~= "Custom Raw UI" then method = "Window Alert" end
+    if position ~= "TopLeft" and position ~= "TopRight" and position ~= "BottomLeft" and position ~= "BottomRight" and position ~= "Center" then position = "TopRight" end
+    paddingX = math.clamp(paddingX, 0, 500)
+    paddingY = math.clamp(paddingY, 0, 500)
+    local isDark = UIState.CascadeTheme == "Dark"
+    local accent = getUIPresetAccent(misc.UIPreset)
+    local notifyBg = isDark and Color3.fromRGB(12, 12, 12) or Color3.fromRGB(235, 235, 235)
+    local notifyTitle = accent or (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 20, 20))
+    local notifyBody = isDark and Color3.fromRGB(220, 220, 220) or Color3.fromRGB(40, 40, 40)
+    if soundName and soundName ~= "None" then pcall(function() AxiomSoundHandler(soundName, soundVolume) end) end
+    local function resolveAnchorAndPosition()
+        if position == "TopLeft" then return Vector2.new(0, 0), UDim2.new(0, paddingX, 0, paddingY)
+        elseif position == "TopRight" then return Vector2.new(1, 0), UDim2.new(1, -paddingX, 0, paddingY)
+        elseif position == "BottomLeft" then return Vector2.new(0, 1), UDim2.new(0, paddingX, 1, -paddingY)
+        elseif position == "Center" then return Vector2.new(0.5, 0.5), UDim2.new(0.5, paddingX, 0.5, paddingY)
+        end
+        return Vector2.new(1, 1), UDim2.new(1, -paddingX, 1, -paddingY)
+    end
+    local anchor, pos = resolveAnchorAndPosition()
+    local sg = Instance.new("ScreenGui")
+    sg.Name = "AxiomNotify"
+    sg.DisplayOrder = 9999
+    sg.IgnoreGuiInset = true
+    sg.ResetOnSpawn = false
+    sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    sg.Parent = (gethui and gethui()) or game:GetService("CoreGui")
+    local function finalizeFadeOut(targets)
+        if animate then
+            for _, t in ipairs(targets) do TweenService:Create(t.obj, TweenInfo.new(0.25), t.outProps):Play() end
+            task.delay(0.3, function() if sg then sg:Destroy() end end)
+        else
+            if sg then sg:Destroy() end
+        end
+    end
+    local f = Instance.new("Frame")
+    f.AnchorPoint = anchor
+    f.Position = pos
+    f.Size = UDim2.fromOffset(300, 60)
+    f.BackgroundColor3 = notifyBg
+    f.BackgroundTransparency = 0.1
+    f.BorderSizePixel = 0
+    f.Parent = sg
+    local corner = Instance.new("UICorner", f)
+    corner.CornerRadius = UDim.new(0, 8)
+    local titleL = Instance.new("TextLabel")
+    titleL.BackgroundTransparency = 1
+    titleL.TextXAlignment = Enum.TextXAlignment.Left
+    titleL.TextYAlignment = Enum.TextYAlignment.Top
+    titleL.FontFace = Font.new("rbxassetid://12187365364")
+    titleL.TextSize = 16
+    titleL.TextColor3 = notifyTitle
+    titleL.Text = tostring(title or "")
+    titleL.Position = UDim2.fromOffset(10, 6)
+    titleL.Size = UDim2.new(1, -20, 0, 20)
+    titleL.Parent = f
+    local bodyL = Instance.new("TextLabel")
+    bodyL.BackgroundTransparency = 1
+    bodyL.TextXAlignment = Enum.TextXAlignment.Left
+    bodyL.TextYAlignment = Enum.TextYAlignment.Top
+    bodyL.FontFace = Font.new("rbxassetid://12187365364")
+    bodyL.TextSize = 14
+    bodyL.TextColor3 = notifyBody
+    bodyL.TextWrapped = true
+    bodyL.Text = tostring(text or "")
+    bodyL.Position = UDim2.fromOffset(10, 28)
+    bodyL.Size = UDim2.new(1, -20, 1, -34)
+    bodyL.Parent = f
+    if animate then
+        f.BackgroundTransparency = 1
+        titleL.TextTransparency = 1
+        bodyL.TextTransparency = 1
+        TweenService:Create(f, TweenInfo.new(0.25, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {BackgroundTransparency = 0.1}):Play()
+        TweenService:Create(titleL, TweenInfo.new(0.25), {TextTransparency = 0}):Play()
+        TweenService:Create(bodyL, TweenInfo.new(0.25), {TextTransparency = 0}):Play()
+    end
+    if method == "Custom Raw UI" then
+        if UIState.CascadeWindowInstance and UIState.CascadeWindowInstance.AbsoluteSize.X > 0 then
+            f.Position = UDim2.fromOffset(UIState.CascadeWindowInstance.AbsolutePosition.X + paddingX, UIState.CascadeWindowInstance.AbsolutePosition.Y + paddingY)
+            f.AnchorPoint = Vector2.new(0, 0)
+        end
+        corner:Destroy()
+        f.BackgroundTransparency = 0.3
+        titleL.TextSize = 15
+        bodyL.TextSize = 13
+    end
+    task.delay(notificationDuration, function()
+        finalizeFadeOut({ { obj = f, outProps = {BackgroundTransparency = 1} }, { obj = titleL, outProps = {TextTransparency = 1} }, { obj = bodyL, outProps = {TextTransparency = 1} } })
+    end)
+end
+
+local function __axiom_build_ui_with_cascade(_G_Config)
+    local function __import(owner, repo, version, file)
+        local tag = (version == "latest" and "latest/download" or ("download/"..version))
+        local ok, lib = pcall(function()
+            return loadstring(game:HttpGetAsync(("https://github.com/%s/%s/releases/%s/%s"):format(owner, repo, tag, file)), file)()
+        end)
+        return ok and lib or nil
+    end
+    local cascade = __import("biggaboy212", "Cascade", "v1.0.1-beta.1", "dist.luau")
+    if not cascade then
+        warn("Cascade failed to load.")
+        return nil
+    end
+    local app = cascade.New({ WindowPill = true, Theme = cascade.Themes.Dark })
+    UIState.CascadeTheme = "Dark"
+    local window = app:Window({ Title = "Axiom.win", Subtitle = "Private Revision | 1.4.0", Searching = true, Draggable = true, Resizable = true, Dropshadow = true, UIBlur = false })
+    UIState.CascadeWindowInstance = window.__instance
+    local function resolveIcon(path, fallback)
+        if getcustomasset and isfile and isfile(path) then
+            return getcustomasset(path)
+        end
+        return fallback
+    end
+    local iconBase = "axiom_assets/"
+    local pages = window:Section({ Title = "Pages", Disclosure = false, Expanded = true })
+    local axiomTabs = {}
+    local function openColorPicker(title, initialColor, onChange)
+        local coreGui = (gethui and gethui()) or game:GetService("CoreGui")
+        local existing = coreGui:FindFirstChild("AxiomColorPicker")
+        if existing then existing:Destroy() end
+        local pickerGui = Instance.new("ScreenGui")
+        pickerGui.Name = "AxiomColorPicker"
+        pickerGui.DisplayOrder = 10050
+        pickerGui.IgnoreGuiInset = true
+        pickerGui.ResetOnSpawn = false
+        pickerGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        pickerGui.Parent = coreGui
+        local isDark = UIState.CascadeTheme == "Dark"
+        local accent = getUIPresetAccent(_G_Config.Misc.UIPreset)
+        local notifyBg = isDark and Color3.fromRGB(12, 12, 12) or Color3.fromRGB(235, 235, 235)
+        local notifyTitle = accent or (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 20, 20))
+        local overlay = Instance.new("Frame")
+        overlay.Size = UDim2.fromScale(1, 1)
+        overlay.Position = UDim2.fromScale(0, 0)
+        overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        overlay.BackgroundTransparency = 0.35
+        overlay.BorderSizePixel = 0
+        overlay.ZIndex = 1
+        overlay.Parent = pickerGui
+        overlay.Active = true
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.fromOffset(260, 320)
+        frame.Position = UDim2.new(0.5, -130, 0.5, -160)
+        frame.BackgroundColor3 = notifyBg
+        frame.BorderSizePixel = 0
+        frame.Parent = pickerGui
+        frame.ZIndex = 2
+        frame.Active = true
+        Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+        local titleL = Instance.new("TextLabel")
+        titleL.BackgroundTransparency = 1
+        titleL.TextXAlignment = Enum.TextXAlignment.Left
+        titleL.FontFace = Font.new("rbxassetid://12187365364")
+        titleL.TextSize = 16
+        titleL.TextColor3 = notifyTitle
+        titleL.Text = tostring(title or "Color")
+        titleL.Position = UDim2.fromOffset(10, 8)
+        titleL.Size = UDim2.new(1, -20, 0, 20)
+        titleL.Parent = frame
+        titleL.ZIndex = 3
+        local wheel = Instance.new("ImageLabel")
+        wheel.Size = UDim2.fromOffset(200, 200)
+        wheel.Position = UDim2.fromOffset(30, 40)
+        wheel.BackgroundTransparency = 1
+        wheel.Image = "rbxassetid://6020299385"
+        wheel.Parent = frame
+        wheel.ZIndex = 2
+        local valueBar = Instance.new("Frame")
+        valueBar.Size = UDim2.fromOffset(200, 12)
+        valueBar.Position = UDim2.fromOffset(30, 250)
+        valueBar.BackgroundColor3 = isDark and Color3.fromRGB(30, 30, 30) or Color3.fromRGB(200, 200, 200)
+        valueBar.BorderSizePixel = 0
+        valueBar.Parent = frame
+        valueBar.ZIndex = 2
+        local valueFill = Instance.new("Frame")
+        valueFill.Size = UDim2.fromScale(1, 1)
+        valueFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        valueFill.BorderSizePixel = 0
+        valueFill.Parent = valueBar
+        valueFill.ZIndex = 3
+        local preview = Instance.new("Frame")
+        preview.Size = UDim2.fromOffset(40, 20)
+        preview.Position = UDim2.fromOffset(210, 8)
+        preview.BackgroundColor3 = initialColor or Color3.new(1,1,1)
+        preview.BorderSizePixel = 0
+        preview.Parent = frame
+        Instance.new("UICorner", preview).CornerRadius = UDim.new(0, 6)
+        preview.ZIndex = 3
+        local cross = Instance.new("Frame")
+        cross.Size = UDim2.fromOffset(10, 10)
+        cross.BackgroundTransparency = 1
+        cross.BorderSizePixel = 1
+        cross.BorderColor3 = accent or Color3.fromRGB(255, 255, 255)
+        cross.Parent = wheel
+        cross.ZIndex = 4
+        local applyBtn = Instance.new("TextButton")
+        applyBtn.Size = UDim2.fromOffset(100, 26)
+        applyBtn.Position = UDim2.fromOffset(30, 275)
+        applyBtn.Text = "Apply"
+        applyBtn.FontFace = Font.new("rbxassetid://12187365364")
+        applyBtn.TextSize = 14
+        applyBtn.TextColor3 = isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 20, 20)
+        applyBtn.BackgroundColor3 = isDark and Color3.fromRGB(32, 32, 32) or Color3.fromRGB(220, 220, 220)
+        applyBtn.BorderSizePixel = 0
+        applyBtn.Parent = frame
+        Instance.new("UICorner", applyBtn).CornerRadius = UDim.new(0, 6)
+        applyBtn.ZIndex = 3
+        local closeBtn = Instance.new("TextButton")
+        closeBtn.Size = UDim2.fromOffset(100, 26)
+        closeBtn.Position = UDim2.fromOffset(130, 275)
+        closeBtn.Text = "Close"
+        closeBtn.FontFace = Font.new("rbxassetid://12187365364")
+        closeBtn.TextSize = 14
+        closeBtn.TextColor3 = isDark and Color3.fromRGB(200, 200, 200) or Color3.fromRGB(40, 40, 40)
+        closeBtn.BackgroundColor3 = isDark and Color3.fromRGB(24, 24, 24) or Color3.fromRGB(210, 210, 210)
+        closeBtn.BorderSizePixel = 0
+        closeBtn.Parent = frame
+        Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
+        closeBtn.ZIndex = 3
+        local h, s, v = Color3.toHSV(initialColor or Color3.new(1,1,1))
+        local draggingWheel, draggingValue = false, false
+        local connections = {}
+        local function setPreviewColor()
+            local c = Color3.fromHSV(h, s, v)
+            preview.BackgroundColor3 = c
+            valueFill.BackgroundColor3 = Color3.fromHSV(h, s, 1)
+            cross.BorderColor3 = accent or (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 20, 20))
+            local radius = wheel.AbsoluteSize.X/2
+            local angle = h * 2 * math.pi
+            cross.Position = UDim2.new(0, radius + math.cos(angle) * radius * s - 5, 0, radius + math.sin(angle) * radius * s - 5)
+        end
+        local function pointToHSV(x, y)
+            local cx, cy = wheel.AbsoluteSize.X/2, wheel.AbsoluteSize.Y/2
+            local dx, dy = x - cx, y - cy
+            h = (math.atan2(dy, dx) / (2*math.pi)) % 1
+            s = math.clamp(math.sqrt(dx*dx + dy*dy) / cx, 0, 1)
+            setPreviewColor()
+        end
+        local function pointToValue(x)
+            local minX = valueBar.AbsolutePosition.X
+            local maxX = minX + valueBar.AbsoluteSize.X
+            v = math.clamp((x - minX) / (maxX - minX), 0, 1)
+            setPreviewColor()
+        end
+        table.insert(connections, wheel.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingWheel = true; pointToHSV((input.Position - wheel.AbsolutePosition).X, (input.Position - wheel.AbsolutePosition).Y) end
+        end))
+        table.insert(connections, wheel.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingWheel = false end end))
+        table.insert(connections, valueBar.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingValue = true; pointToValue(input.Position.X) end
+        end))
+        table.insert(connections, valueBar.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingValue = false end end))
+        table.insert(connections, UserInputService.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                if draggingWheel then pointToHSV((input.Position - wheel.AbsolutePosition).X, (input.Position - wheel.AbsolutePosition).Y)
+                elseif draggingValue then pointToValue(input.Position.X) end
+            end
+        end))
+        applyBtn.MouseButton1Click:Connect(function()
+            if onChange then onChange(Color3.fromHSV(h, s, v)) end
+            for _, c in ipairs(connections) do pcall(function() c:Disconnect() end) end
+            pickerGui:Destroy()
+        end)
+        closeBtn.MouseButton1Click:Connect(function()
+            for _, c in ipairs(connections) do pcall(function() c:Disconnect() end) end
+            pickerGui:Destroy()
+        end)
+        setPreviewColor()
+    end
+    local function newRow(form, label)
+        local row = form:Row({ SearchIndex = label })
+        row:Left():Label({ Text = label })
+        return row
+    end
+    local function pullDown(parent, opts, idx, set)
+        parent:PullDownButton({ Options = opts, Value = idx or 1, ValueChanged = function(self, v) if set then set(v) end end })
+    end
+    local function colorRow(form, label, getColor, setColor)
+        local row = newRow(form, label)
+        row:Right():Button({ Label = "Pick", Pushed = function()
+            openColorPicker(label, getColor(), function(c)
+                setColor(c)
+            end)
+        end })
+    end
+    local function getPlayerNames()
+        local names = {}
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer then
+                table.insert(names, p.Name)
+            end
+        end
+        if #names == 0 then
+            names = {"None"}
+        end
+        return names
+    end
+
+    do
+        local tab = pages:Tab({ Title = "Combat", Icon = resolveIcon(iconBase.."combat.png", "rbxassetid://131576589857912"), Selected = true })
+        axiomTabs.Combat = tab
+        local sec = tab:PageSection({ Title = "Aimbot" })
+        local form = sec:Form()
+        newRow(form, "Aimbot"):Right():Toggle({ Value = _G_Config.Aimbot.Enabled, ValueChanged = function(_,v) _G_Config.Aimbot.Enabled=v AxiomNotify("Axiom.win", "Aimbot "..(v and "enabled" or "disabled"), _G_Config) end })
+        newRow(form, "FOV Circle"):Right():Toggle({ Value = _G_Config.Aimbot.FOVCircle, ValueChanged = function(_,v) _G_Config.Aimbot.FOVCircle=v end })
+        newRow(form, "FOV Radius"):Right():Slider({ Minimum = 40, Maximum = 600, Value = _G_Config.Aimbot.FOV, ValueChanged = function(_,v) _G_Config.Aimbot.FOV=v end })
+        newRow(form, "FOV Thickness"):Right():Slider({ Minimum = 1, Maximum = 4, Value = _G_Config.Aimbot.FOVThickness, ValueChanged = function(_,v) _G_Config.Aimbot.FOVThickness=v end })
+        newRow(form, "FOV Filled"):Right():Toggle({ Value = _G_Config.Aimbot.FOVFilled, ValueChanged = function(_,v) _G_Config.Aimbot.FOVFilled=v end })
+        colorRow(form, "FOV Color", function() return _G_Config.Aimbot.FOVColor end, function(c) _G_Config.Aimbot.FOVColor = c end)
+        newRow(form, "Snap Lines"):Right():Toggle({ Value = _G_Config.Aimbot.SnapLines, ValueChanged = function(_,v) _G_Config.Aimbot.SnapLines=v end })
+        colorRow(form, "Snap Line Color", function() return _G_Config.Aimbot.SnapLineColor end, function(c) _G_Config.Aimbot.SnapLineColor = c end)
+        newRow(form, "Snap Line Thickness"):Right():Slider({ Minimum = 1, Maximum = 4, Value = _G_Config.Aimbot.SnapLineThickness, ValueChanged = function(_,v) _G_Config.Aimbot.SnapLineThickness=v end })
+        newRow(form, "Target HUD"):Right():Toggle({ Value = _G_Config.Aimbot.TargetHUD, ValueChanged = function(_,v) _G_Config.Aimbot.TargetHUD=v end })
+        pullDown(newRow(form, "Target Part"):Right(), {"Head","UpperTorso","HumanoidRootPart"}, ({Head=1,UpperTorso=2,HumanoidRootPart=3})[_G_Config.Aimbot.TargetPart] or 1, function(i) _G_Config.Aimbot.TargetPart=(                                                 {"Head","UpperTorso","HumanoidRootPart"})[i] end)
+        pullDown(newRow(form, "Aimbot Method"):Right(), {"Mouse","Camera"}, (_G_Config.Aimbot.Method=="Camera" and 2 or 1), function(i) _G_Config.Aimbot.Method=( {"Mouse","Camera"})[i] end)
+        pullDown(newRow(form, "Activation Mode"):Right(), {"Hold","Toggle","Always On"}, ({Hold=1,Toggle=2,["Always On"]=3})[_G_Config.Aimbot.Mode] or 1, function(i) _G_Config.Aimbot.Mode=(                                                 {"Hold","Toggle","Always On"})[i] end)
+        newRow(form, "Visual Backtrack"):Right():Toggle({ Value = _G_Config.Aimbot.VisualBT, ValueChanged = function(_,v) _G_Config.Aimbot.VisualBT=v end })
+        newRow(form, "Smoothness"):Right():Slider({ Minimum = 1, Maximum = 20, Value = _G_Config.Aimbot.Smoothness, ValueChanged = function(_,v) _G_Config.Aimbot.Smoothness=v end })
+        local secF = tab:PageSection({ Title = "Filters" })
+        local formF = secF:Form()
+        newRow(formF, "Wall Check"):Right():Toggle({ Value = _G_Config.Aimbot.WallCheck, ValueChanged = function(_,v) _G_Config.Aimbot.WallCheck=v end })
+        newRow(formF, "Team Check"):Right():Toggle({ Value = _G_Config.Aimbot.TeamCheck, ValueChanged = function(_,v) _G_Config.Aimbot.TeamCheck=v end })
+        newRow(formF, "Aimbot Key"):Right():KeybindField({ Value = _G_Config.Aimbot.Key, ValueChanged = function(_,k)
+            _G_Config.Aimbot.Key = k
+            local conflicts = getKeybindConflictNames(k, "Aimbot")
+            if #conflicts > 0 then AxiomNotify("Axiom.win", "Key already used by: "..table.concat(conflicts, ", "), _G_Config) end
+        end })
+        pullDown(newRow(formF, "Prioritization"):Right(), {"Closest Crosshair","Closest Distance","Lowest Health"}, ({["Closest Crosshair"]=1,["Closest Distance"]=2,["Lowest Health"]=3})[_G_Config.Aimbot.Prioritization] or 1, function(i) _G_Config.Aimbot.Prioritization=( {"Closest Crosshair","Closest Distance","Lowest Health"})[i] end)
+
+        local secH = tab:PageSection({ Title = "Hitbox Expander" })
+        local formH = secH:Form()
+        newRow(formH, "Enable"):Right():Toggle({ Value = _G_Config.Hitbox.Enabled, ValueChanged = function(_,v) _G_Config.Hitbox.Enabled=v AxiomNotify("Axiom.win", "Hitbox "..(v and "enabled" or "disabled"), _G_Config) end })
+        newRow(formH, "Expand Size"):Right():Slider({ Minimum=1, Maximum=3, Value=_G_Config.Hitbox.ExpandSize, ValueChanged=function(_,v) _G_Config.Hitbox.ExpandSize=v end })
+        newRow(formH, "Transparency"):Right():Slider({ Minimum=0, Maximum=1, Value=_G_Config.Hitbox.Transparency, ValueChanged=function(_,v) _G_Config.Hitbox.Transparency=v end })
+        newRow(formH, "Outline"):Right():Toggle({ Value=_G_Config.Hitbox.ShowOutline, ValueChanged=function(_,v) _G_Config.Hitbox.ShowOutline=v end })
+        newRow(formH, "Head"):Right():Toggle({ Value=_G_Config.Hitbox.Head, ValueChanged=function(_,v) _G_Config.Hitbox.Head=v end })
+        newRow(formH, "Torso"):Right():Toggle({ Value=_G_Config.Hitbox.Torso, ValueChanged=function(_,v) _G_Config.Hitbox.Torso=v end })
+        colorRow(formH, "Hitbox Color", function() return _G_Config.Hitbox.Color end, function(c) _G_Config.Hitbox.Color = c end)
+        colorRow(formH, "Outline Color", function() return _G_Config.Hitbox.OutlineColor end, function(c) _G_Config.Hitbox.OutlineColor = c end)
+
+        local secR = tab:PageSection({ Title = "Reset" })
+        local formR = secR:Form()
+        newRow(formR, "Reset Aimbot"):Right():Button({ Label = "Reset", Pushed = function() AxiomResetSection("Aimbot", "Aimbot") end })
+        local secMM2 = tab:PageSection({ Title = "MM2" })
+        local formMM2 = secMM2:Form()
+        local cfg = _G_Config.MM2
+        if cfg then
+            newRow(formMM2, "Silent Aim"):Right():Toggle({
+                Value = cfg.SilentAimEnabled,
+                ValueChanged = function(_, v) cfg.SilentAimEnabled = v AxiomNotify("MM2", "Silent Aim " .. (v and "on" or "off"), _G_Config) end
+            })
+            newRow(formMM2, "Silent Aim Key"):Right():KeybindField({ Value = cfg.SilentAimKey, ValueChanged = function(_, k) cfg.SilentAimKey = k end })
+            pullDown(newRow(formMM2, "Silent Aim Mode"):Right(), { "Hold", "Toggle" }, (cfg.SilentAimMode == "Toggle" and 2 or 1), function(i) cfg.SilentAimMode = ({"Hold", "Toggle"})[i] end)
+            newRow(formMM2, "Kill All"):Right():Toggle({
+                Value = cfg.KillAllEnabled,
+                ValueChanged = function(_, v) cfg.KillAllEnabled = v AxiomNotify("MM2", "Kill All " .. (v and "on" or "off"), _G_Config) end
+            })
+            newRow(formMM2, "Kill All Key"):Right():KeybindField({ Value = cfg.KillAllKey, ValueChanged = function(_, k) cfg.KillAllKey = k end })
+            pullDown(newRow(formMM2, "Kill All Mode"):Right(), { "Hold", "Toggle" }, (cfg.KillAllMode == "Toggle" and 2 or 1), function(i) cfg.KillAllMode = ({"Hold", "Toggle"})[i] end)
+        end
+    end
+
+    do
+        local tab = pages:Tab({ Title = "Visuals", Icon = resolveIcon(iconBase.."visuals.png", "rbxassetid://135793946948356") })
+        axiomTabs.Visuals = tab
+        local sec = tab:PageSection({ Title = "ESP" })
+        local form = sec:Form()
+        local function t(name, val, set) newRow(form,name):Right():Toggle({ Value = val, ValueChanged = function(_,v) set(v) end }) end
+        local function s(name, mn, mx, val, set) newRow(form,name):Right():Slider({ Minimum=mn, Maximum=mx, Value=val, ValueChanged=function(_,v) set(v) end }) end
+        t("Enable ESP", _G_Config.Visuals.Enabled, function(v) _G_Config.Visuals.Enabled=v AxiomNotify("Axiom.win", "ESP "..(v and "enabled" or "disabled"), _G_Config) end)
+        t("Team Check", _G_Config.Visuals.TeamCheck, function(v) _G_Config.Visuals.TeamCheck=v end)
+        t("2D Box", _G_Config.Visuals.Box2D, function(v) _G_Config.Visuals.Box2D=v end)
+        t("3D Box", _G_Config.Visuals.Box3D, function(v) _G_Config.Visuals.Box3D=v end)
+        t("Tracers", _G_Config.Visuals.Tracer, function(v) _G_Config.Visuals.Tracer=v end)
+        pullDown(newRow(form, "Tracer Origin"):Right(), {"Bottom","Center","Top","Mouse"}, ({Bottom=1,Center=2,Top=3,Mouse=4})[_G_Config.Visuals.TracerOrigin] or 1, function(i) _G_Config.Visuals.TracerOrigin=( {"Bottom","Center","Top","Mouse"})[i] end)
+        t("Head Dot", _G_Config.Visuals.HeadDot, function(v) _G_Config.Visuals.HeadDot=v end)
+        t("Center Dot", _G_Config.Visuals.CenterDot, function(v) _G_Config.Visuals.CenterDot=v end)
+        t("Skeleton", _G_Config.Visuals.Skeleton, function(v) _G_Config.Visuals.Skeleton=v end)
+        t("Name", _G_Config.Visuals.Name, function(v) _G_Config.Visuals.Name=v end)
+        t("Display Name", _G_Config.Visuals.DisplayName, function(v) _G_Config.Visuals.DisplayName=v end)
+        t("Distance", _G_Config.Visuals.Distance, function(v) _G_Config.Visuals.Distance=v end)
+        t("Health", _G_Config.Visuals.Health, function(v) _G_Config.Visuals.Health=v end)
+        t("Tool Text", _G_Config.Visuals.ToolText, function(v) _G_Config.Visuals.ToolText=v end)
+        t("Chams", _G_Config.Visuals.Chams, function(v) _G_Config.Visuals.Chams=v end)
+        t("Tool Chams", _G_Config.Visuals.ToolChams, function(v) _G_Config.Visuals.ToolChams=v end)
+        pullDown(newRow(form, "Chams Method"):Right(), {"Highlight","Drawing"}, (_G_Config.Visuals.ChamsMethod=="Drawing" and 2 or 1), function(i) _G_Config.Visuals.ChamsMethod=( {"Highlight","Drawing"})[i] end)
+        s("Text Size", 8, 24, _G_Config.Visuals.TextSize, function(v) _G_Config.Visuals.TextSize=v end)
+        s("Distance Limit", 100, 4000, _G_Config.Visuals.DistanceLimit, function(v) _G_Config.Visuals.DistanceLimit=v end)
+        t("Offscreen Arrows", _G_Config.Visuals.OffscreenArrows, function(v) _G_Config.Visuals.OffscreenArrows=v end)
+        s("Arrow Size", 8, 30, _G_Config.Visuals.OffscreenArrowSize, function(v) _G_Config.Visuals.OffscreenArrowSize=v end)
+        pullDown(newRow(form, "Info Position"):Right(), {"Top","Bottom"}, ({Top=1,Bottom=2})[_G_Config.Visuals.InfoPosition] or 1, function(i) _G_Config.Visuals.InfoPosition=( {"Top","Bottom"})[i] end)
+        pullDown(newRow(form, "Health Mode"):Right(), {"Text","Bar","Both"}, ({Text=1,Bar=2,Both=3})[_G_Config.Visuals.HealthMode] or 1, function(i) _G_Config.Visuals.HealthMode=( {"Text","Bar","Both"})[i] end)
+        pullDown(newRow(form, "Health Bar Side"):Right(), {"Left","Right"}, ({Left=1,Right=2})[_G_Config.Visuals.HealthBarSide] or 1, function(i) _G_Config.Visuals.HealthBarSide=( {"Left","Right"})[i] end)
+
+        local secColors = tab:PageSection({ Title = "ESP Colors" })
+        local formColors = secColors:Form()
+        colorRow(formColors, "2D Box Color", function() return _G_Config.Visuals.Box2DColor end, function(c) _G_Config.Visuals.Box2DColor = c end)
+        newRow(formColors, "2D Box Alpha"):Right():Slider({ Minimum=0, Maximum=1, Value=_G_Config.Visuals.Box2DTransparency, ValueChanged=function(_,v) _G_Config.Visuals.Box2DTransparency=v end })
+        colorRow(formColors, "3D Box Color", function() return _G_Config.Visuals.Box3DColor end, function(c) _G_Config.Visuals.Box3DColor = c end)
+        newRow(formColors, "3D Box Alpha"):Right():Slider({ Minimum=0, Maximum=1, Value=_G_Config.Visuals.Box3DTransparency, ValueChanged=function(_,v) _G_Config.Visuals.Box3DTransparency=v end })
+        colorRow(formColors, "Skeleton Color", function() return _G_Config.Visuals.SkeletonColor end, function(c) _G_Config.Visuals.SkeletonColor = c end)
+        newRow(formColors, "Skeleton Alpha"):Right():Slider({ Minimum=0, Maximum=1, Value=_G_Config.Visuals.SkeletonTransparency, ValueChanged=function(_,v) _G_Config.Visuals.SkeletonTransparency=v end })
+        colorRow(formColors, "Tracer Color", function() return _G_Config.Visuals.TracerColor end, function(c) _G_Config.Visuals.TracerColor = c end)
+        newRow(formColors, "Tracer Alpha"):Right():Slider({ Minimum=0, Maximum=1, Value=_G_Config.Visuals.TracerTransparency, ValueChanged=function(_,v) _G_Config.Visuals.TracerTransparency=v end })
+        colorRow(formColors, "Head Dot Color", function() return _G_Config.Visuals.HeadDotColor end, function(c) _G_Config.Visuals.HeadDotColor = c end)
+        newRow(formColors, "Head Dot Alpha"):Right():Slider({ Minimum=0, Maximum=1, Value=_G_Config.Visuals.HeadDotTransparency, ValueChanged=function(_,v) _G_Config.Visuals.HeadDotTransparency=v end })
+        newRow(formColors, "Head Dot Size"):Right():Slider({ Minimum=1, Maximum=8, Value=_G_Config.Visuals.HeadDotRadius, ValueChanged=function(_,v) _G_Config.Visuals.HeadDotRadius=v end })
+        colorRow(formColors, "Center Dot Color", function() return _G_Config.Visuals.CenterDotColor end, function(c) _G_Config.Visuals.CenterDotColor = c end)
+        newRow(formColors, "Center Dot Size"):Right():Slider({ Minimum=1, Maximum=6, Value=_G_Config.Visuals.CenterDotRadius, ValueChanged=function(_,v) _G_Config.Visuals.CenterDotRadius=v end })
+        colorRow(formColors, "Text Color", function() return _G_Config.Visuals.TextColor end, function(c) _G_Config.Visuals.TextColor = c end)
+        newRow(formColors, "Text Alpha"):Right():Slider({ Minimum=0, Maximum=1, Value=_G_Config.Visuals.TextTransparency, ValueChanged=function(_,v) _G_Config.Visuals.TextTransparency=v end })
+        colorRow(formColors, "Chams Color", function() return _G_Config.Visuals.ChamsColor end, function(c) _G_Config.Visuals.ChamsColor = c end)
+        newRow(formColors, "Chams Alpha"):Right():Slider({ Minimum=0, Maximum=1, Value=_G_Config.Visuals.ChamsTransparency, ValueChanged=function(_,v) _G_Config.Visuals.ChamsTransparency=v end })
+        colorRow(formColors, "Tool Color", function() return _G_Config.Visuals.ToolColor end, function(c) _G_Config.Visuals.ToolColor = c end)
+        newRow(formColors, "Tool Alpha"):Right():Slider({ Minimum=0, Maximum=1, Value=_G_Config.Visuals.ToolTransparency, ValueChanged=function(_,v) _G_Config.Visuals.ToolTransparency=v end })
+        colorRow(formColors, "Arrow Color", function() return _G_Config.Visuals.OffscreenArrowColor end, function(c) _G_Config.Visuals.OffscreenArrowColor = c end)
+        newRow(formColors, "Arrow Alpha"):Right():Slider({ Minimum=0, Maximum=1, Value=_G_Config.Visuals.OffscreenArrowTransparency, ValueChanged=function(_,v) _G_Config.Visuals.OffscreenArrowTransparency=v end })
+        local secR = tab:PageSection({ Title = "Reset" })
+        local formR = secR:Form()
+        newRow(formR, "Reset ESP"):Right():Button({ Label = "Reset", Pushed = function() AxiomResetSection("Visuals", "ESP") end })
+        local secMM2 = tab:PageSection({ Title = "MM2" })
+        local formMM2 = secMM2:Form()
+        local cfg = _G_Config.MM2
+        if cfg then
+            newRow(formMM2, "Gun ESP"):Right():Toggle({ Value = cfg.GunESP, ValueChanged = function(_, v) cfg.GunESP = v end })
+            newRow(formMM2, "Murderer ESP"):Right():Toggle({ Value = cfg.MurdererESP, ValueChanged = function(_, v) cfg.MurdererESP = v end })
+            newRow(formMM2, "Sheriff ESP"):Right():Toggle({ Value = cfg.SheriffESP, ValueChanged = function(_, v) cfg.SheriffESP = v end })
+            newRow(formMM2, "Role ESP"):Right():Toggle({ Value = cfg.RoleESP, ValueChanged = function(_, v) cfg.RoleESP = v end })
+        end
+    end
+
+    do
+        local tab = pages:Tab({ Title = "Movement", Icon = resolveIcon(iconBase.."movement.png", "rbxassetid://110213647176253") })
+        axiomTabs.Movement = tab
+        local secA = tab:PageSection({ Title = "Speed" })
+        local formA = secA:Form()
+        newRow(formA, "Enabled"):Right():Toggle({ Value=_G_Config.Movement.SpeedEnabled, ValueChanged=function(_,v) _G_Config.Movement.SpeedEnabled=v end })
+        pullDown(newRow(formA, "Method"):Right(), {"CFrame","Velocity"}, (_G_Config.Movement.SpeedMethod=="Velocity" and 2 or 1), function(i) _G_Config.Movement.SpeedMethod=( {"CFrame","Velocity"})[i] end)
+        newRow(formA, "Magnitude"):Right():Slider({ Minimum=16, Maximum=250, Value=_G_Config.Movement.SpeedValue, ValueChanged=function(_,v) _G_Config.Movement.SpeedValue=v end })
+        newRow(formA, "Speed Keybind"):Right():KeybindField({ Value=_G_Config.Movement.SpeedKey, ValueChanged=function(_,k)
+            _G_Config.Movement.SpeedKey = k
+            local conflicts = getKeybindConflictNames(k, "Speed")
+            if #conflicts > 0 then AxiomNotify("Axiom.win", "Key already used by: "..table.concat(conflicts, ", "), _G_Config) end
+        end })
+        pullDown(newRow(formA, "Activation Mode"):Right(), {"Hold","Toggle","Always On"}, ({Hold=1,Toggle=2,["Always On"]=3})[_G_Config.Movement.SpeedMode] or 2, function(i) _G_Config.Movement.SpeedMode=( {"Hold","Toggle","Always On"})[i] end)
+        local secB = tab:PageSection({ Title = "Air" })
+        local formB = secB:Form()
+        newRow(formB, "Enable Fly"):Right():Toggle({ Value=_G_Config.Movement.FlyEnabled, ValueChanged=function(_,v) _G_Config.Movement.FlyEnabled=v end })
+        newRow(formB, "Fly Power"):Right():Slider({ Minimum=10, Maximum=500, Value=_G_Config.Movement.FlySpeed, ValueChanged=function(_,v) _G_Config.Movement.FlySpeed=v end })
+        pullDown(newRow(formB, "Fly Activation Mode"):Right(), {"Hold","Toggle","Always On"}, ({Hold=1,Toggle=2,["Always On"]=3})[_G_Config.Movement.FlyMode] or 2, function(i) _G_Config.Movement.FlyMode=( {"Hold","Toggle","Always On"})[i] end)
+        newRow(formB, "Fly Keybind"):Right():KeybindField({ Value=_G_Config.Movement.FlyKey, ValueChanged=function(_,k)
+            _G_Config.Movement.FlyKey = k
+            local conflicts = getKeybindConflictNames(k, "Fly")
+            if #conflicts > 0 then AxiomNotify("Axiom.win", "Key already used by: "..table.concat(conflicts, ", "), _G_Config) end
+        end })
+        newRow(formB, "Freecam Enable"):Right():Toggle({ Value=_G_Config.Movement.FreecamEnabled, ValueChanged=function(_,v) _G_Config.Movement.FreecamEnabled=v end })
+        newRow(formB, "Freecam Velocity"):Right():Slider({ Minimum=1, Maximum=10, Value=_G_Config.Movement.FreecamSpeed, ValueChanged=function(_,v) _G_Config.Movement.FreecamSpeed=v end })
+        newRow(formB, "Freecam Smooth"):Right():Slider({ Minimum=5, Maximum=50, Value=math.floor((_G_Config.Movement.FreecamSmoothness or 0.25)*100), ValueChanged=function(_,v) _G_Config.Movement.FreecamSmoothness=v/100 end })
+        pullDown(newRow(formB, "Freecam Activation Mode"):Right(), {"Hold","Toggle","Always On"}, ({Hold=1,Toggle=2,["Always On"]=3})[_G_Config.Movement.FreecamMode] or 2, function(i) _G_Config.Movement.FreecamMode=( {"Hold","Toggle","Always On"})[i] end)
+        newRow(formB, "Freecam Keybind"):Right():KeybindField({ Value=_G_Config.Movement.FreecamKey, ValueChanged=function(_,k)
+            _G_Config.Movement.FreecamKey = k
+            local conflicts = getKeybindConflictNames(k, "Freecam")
+            if #conflicts > 0 then AxiomNotify("Axiom.win", "Key already used by: "..table.concat(conflicts, ", "), _G_Config) end
+        end })
+        newRow(formB, "Free cursor in freecam"):Right():Toggle({ Value=_G_Config.Movement.FreecamFreeCursor ~= false, ValueChanged=function(_,v) _G_Config.Movement.FreecamFreeCursor=v end })
+        local secC = tab:PageSection({ Title = "Extras" })
+        local formC = secC:Form()
+        newRow(formC, "Noclip"):Right():Toggle({ Value=_G_Config.Movement.Noclip, ValueChanged=function(_,v) _G_Config.Movement.Noclip=v end })
+        newRow(formC, "Infinite Jump"):Right():Toggle({ Value=_G_Config.Movement.InfJump, ValueChanged=function(_,v) _G_Config.Movement.InfJump=v end })
+        newRow(formC, "Bhop"):Right():Toggle({ Value=_G_Config.Movement.Bhop or false, ValueChanged=function(_,v) _G_Config.Movement.Bhop=v end })
+        newRow(formC, "Teleport Walk"):Right():Toggle({ Value=_G_Config.Movement.TPWalk or false, ValueChanged=function(_,v) _G_Config.Movement.TPWalk=v end })
+        newRow(formC, "TP Step"):Right():Slider({ Minimum=1, Maximum=10, Value=_G_Config.Movement.TPStep or 3, ValueChanged=function(_,v) _G_Config.Movement.TPStep=v end })
+        newRow(formC, "Teleport Rate"):Right():Slider({ Minimum=1, Maximum=20, Value=math.floor((_G_Config.Movement.TPRate or 0.05)*100), ValueChanged=function(_,v) _G_Config.Movement.TPRate=v/100 end })
+        newRow(formC, "Spinbot"):Right():Toggle({ Value=_G_Config.Movement.Spinbot or false, ValueChanged=function(_,v) _G_Config.Movement.Spinbot=v end })
+        newRow(formC, "Spinbot Speed"):Right():Slider({ Minimum=0, Maximum=720, Value=_G_Config.Movement.SpinSpeed or 360, ValueChanged=function(_,v) _G_Config.Movement.SpinSpeed=v end })
+
+        local secR = tab:PageSection({ Title = "Reset" })
+        local formR = secR:Form()
+        newRow(formR, "Reset Movement"):Right():Button({ Label = "Reset", Pushed = function() AxiomResetSection("Movement", "Movement") end })
+        local secMM2 = tab:PageSection({ Title = "MM2" })
+        local formMM2 = secMM2:Form()
+        local cfg = _G_Config.MM2
+        if cfg then
+            newRow(formMM2, "TP to Gun"):Right():Button({
+                Label = "TP to Gun",
+                Pushed = function()
+                    local gun = _G.getDroppedGun and _G.getDroppedGun() or nil
+                    if gun and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        LocalPlayer.Character.HumanoidRootPart.CFrame = gun.CFrame + Vector3.new(0, 2, 0)
+                        AxiomNotify("MM2", "Teleported to gun", _G_Config)
+                    else
+                        AxiomNotify("MM2", "No gun found", _G_Config)
+                    end
+                end
+            })
+            newRow(formMM2, "Auto Gun Grab"):Right():Toggle({ Value = cfg.AutoGunGrab, ValueChanged = function(_, v) cfg.AutoGunGrab = v end })
+        end
+    end
+
+    do
+        local tab = pages:Tab({ Title = "Environment", Icon = resolveIcon(iconBase.."environment.png", "rbxassetid://113484795763411") })
+        local sec = tab:PageSection({ Title = "World Visuals" })
+        local form = sec:Form()
+        newRow(form, "Fullbright"):Right():Toggle({ Value=_G_Config.Misc.FullBright, ValueChanged=function(_,v) _G_Config.Misc.FullBright=v end })
+        newRow(form, "Ambient Control"):Right():Toggle({ Value=_G_Config.Misc.AmbientEnabled, ValueChanged=function(_,v) _G_Config.Misc.AmbientEnabled=v end })
+        colorRow(form, "Ambient Color", function() return _G_Config.Misc.AmbientColor end, function(c) _G_Config.Misc.AmbientColor = c end)
+    end
+
+    do
+        local tab = pages:Tab({ Title = "UI", Icon = resolveIcon(iconBase.."ui.png", "rbxassetid://72040453503595") })
+        local secA = tab:PageSection({ Title = "Appearance" })
+        local formA = secA:Form()
+        pullDown(newRow(formA, "Theme Preset"):Right(), {"Default","Emerald","Nebula","Blood"}, ({Default=1,Emerald=2,Nebula=3,Blood=4})[_G_Config.Misc.UIPreset] or 1, function(i)
+            _G_Config.Misc.UIPreset = ({"Default","Emerald","Nebula","Blood"})[i]
+        end)
+
+        local secN = tab:PageSection({ Title = "Notifications" })
+        local formN = secN:Form()
+        pullDown(newRow(formN, "Method"):Right(), {"Window Alert","Custom Raw UI"}, ({["Window Alert"]=1,["Custom Raw UI"]=2})[_G_Config.Misc.NotificationMethod] or 1, function(i)
+            _G_Config.Misc.NotificationMethod = ({"Window Alert","Custom Raw UI"})[i]
+        end)
+        pullDown(newRow(formN, "Position"):Right(), {"TopLeft","TopRight","BottomLeft","BottomRight","Center"}, ({TopLeft=1,TopRight=2,BottomLeft=3,BottomRight=4,Center=5})[_G_Config.Misc.NotificationPosition] or 2, function(i)
+            _G_Config.Misc.NotificationPosition = ({"TopLeft","TopRight","BottomLeft","BottomRight","Center"})[i]
+        end)
+        newRow(formN, "Duration"):Right():Slider({ Minimum=1, Maximum=10, Value=_G_Config.Misc.NotificationDuration, ValueChanged=function(_,v) _G_Config.Misc.NotificationDuration=v end })
+        newRow(formN, "Animate"):Right():Toggle({ Value=_G_Config.Misc.NotificationAnimate, ValueChanged=function(_,v) _G_Config.Misc.NotificationAnimate=v end })
+        local soundOptions = {"None","hl2 grab","tf2 warn","hl2 ui","discord","tf2 apples","og roblox","sl noti","gta","tf2 menu"}
+        local soundIndexMap = {["None"]=1,["hl2 grab"]=2,["tf2 warn"]=3,["hl2 ui"]=4,["discord"]=5,["tf2 apples"]=6,["og roblox"]=7,["sl noti"]=8,["gta"]=9,["tf2 menu"]=10}
+        pullDown(newRow(formN, "Sound"):Right(), soundOptions, soundIndexMap[_G_Config.Misc.NotificationSound] or 10, function(i)
+            local pick = soundOptions[i]
+            _G_Config.Misc.NotificationSound = pick
+            if pick ~= "None" then AxiomSoundHandler(pick, _G_Config.Misc.NotificationVolume) end
+        end)
+        newRow(formN, "Volume"):Right():Slider({ Minimum=0, Maximum=1, Value=_G_Config.Misc.NotificationVolume, ValueChanged=function(_,v) _G_Config.Misc.NotificationVolume=v end })
+        newRow(formN, "Test Notify"):Right():Button({ Label = "Notify", Pushed = function()
+            AxiomNotify("Axiom.win", "Test notification", _G_Config)
+        end })
+
+        local secW = tab:PageSection({ Title = "Watermark" })
+        local formW = secW:Form()
+        newRow(formW, "Enable"):Right():Toggle({ Value=_G_Config.Misc.WatermarkEnabled, ValueChanged=function(_,v) _G_Config.Misc.WatermarkEnabled=v end })
+        pullDown(newRow(formW, "Position"):Right(), {"TopLeft","TopRight","BottomLeft","BottomRight"}, ({TopLeft=1,TopRight=2,BottomLeft=3,BottomRight=4})[_G_Config.Misc.WatermarkPosition] or 1, function(i)
+            _G_Config.Misc.WatermarkPosition = ({"TopLeft","TopRight","BottomLeft","BottomRight"})[i]
+        end)
+    end
+
+    do
+        local tab = pages:Tab({ Title = "Configs", Icon = resolveIcon(iconBase.."configs.png", "rbxassetid://125339100043044") })
+        local sec = tab:PageSection({ Title = "Profiles" })
+        local form = sec:Form()
+        local currentName = "default"
+        local currentJson = ""
+        local configs = listConfigs()
+        newRow(form, "Name"):Right():TextField({ Value = currentName, ValueChanged=function(_,v) currentName = v end })
+        pullDown(newRow(form, "Select"):Right(), configs, 1, function(i)
+            currentName = configs[i] or currentName
+        end)
+        newRow(form, "Refresh"):Right():Button({ Label = "Refresh", Pushed = function()
+            configs = listConfigs()
+        end })
+        newRow(form, "Save"):Right():Button({ Label = "Save", Pushed = function() saveConfig(currentName, false) end })
+        newRow(form, "Overwrite"):Right():Button({ Label = "Overwrite", Pushed = function() saveConfig(currentName, true) end })
+        newRow(form, "Load"):Right():Button({ Label = "Load", Pushed = function() loadConfig(currentName) end })
+        newRow(form, "Export"):Right():Button({ Label = "Copy JSON", Pushed = function() currentJson = exportConfig() end })
+
+        local sec2 = tab:PageSection({ Title = "Import" })
+        local form2 = sec2:Form()
+        newRow(form2, "JSON"):Right():TextField({ Value = currentJson, ValueChanged=function(_,v) currentJson = v end })
+        newRow(form2, "Import"):Right():Button({ Label = "Import", Pushed = function() importConfig(currentJson) end })
+    end
+
+    do
+        local tab = pages:Tab({ Title = "Spy", Icon = resolveIcon(iconBase.."spy.png", "rbxassetid://107190923208298") })
+        axiomTabs.Spy = tab
+        local sec = tab:PageSection({ Title = "Spectate" })
+        local form = sec:Form()
+        local targetName = nil
+        local targetRow = nil
+        local targetOptions = {}
+
+        local function rebuildTargets()
+            targetOptions = getPlayerNames()
+            if targetRow and targetRow.__instance then
+                targetRow.__instance:Destroy()
+            end
+            targetRow = newRow(form, "Target")
+            targetRow:Right():PullDownButton({
+                Options = targetOptions,
+                Value = 1,
+                ValueChanged = function(_, i)
+                    targetName = targetOptions[i]
+                    SpyState.TargetName = targetName
+                end
+            })
+            targetName = targetOptions[1]
+            SpyState.TargetName = targetName
+        end
+
+        rebuildTargets()
+        newRow(form, "Refresh"):Right():Button({ Label = "Refresh", Pushed = rebuildTargets })
+        newRow(form, "Spectate"):Right():Button({ Label = "Toggle", Pushed = function()
+            SpyState.Spectating = not SpyState.Spectating
+        end })
+
+        local secT = tab:PageSection({ Title = "Teleport" })
+        local formT = secT:Form()
+        newRow(formT, "Teleport to Target"):Right():Button({ Label = "Teleport", Pushed = function()
+            local name = SpyState.TargetName
+            local p = name and Players:FindFirstChild(name)
+            local char = p and p.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local myChar = LocalPlayer.Character
+            local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+            if hrp and myHrp then
+                myHrp.CFrame = hrp.CFrame + Vector3.new(0, 3, 0)
+            end
+        end })
+        newRow(formT, "TP to Target then Return"):Right():Button({ Label = "TP & Return", Pushed = function()
+            local name = SpyState.TargetName
+            local p = name and Players:FindFirstChild(name)
+            local char = p and p.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local myChar = LocalPlayer.Character
+            local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+            if not hrp or not myHrp then return end
+            local savedCF = myHrp.CFrame
+            pcall(function()
+                myHrp.CFrame = hrp.CFrame
+                local spinSpeed = math.rad(1080)
+                myHrp.AssemblyAngularVelocity = Vector3.new(spinSpeed, spinSpeed, spinSpeed)
+                myHrp.AssemblyLinearVelocity = Vector3.new(1200, 800, 1200)
+                task.delay(0.25, function()
+                    pcall(function()
+                        if myHrp and myHrp.Parent then
+                            myHrp.CFrame = savedCF
+                            myHrp.AssemblyLinearVelocity = Vector3.zero
+                            myHrp.AssemblyAngularVelocity = Vector3.zero
+                        end
+                    end)
+                end)
+            end)
+        end })
+        local secMM2 = tab:PageSection({ Title = "MM2" })
+        local formMM2 = secMM2:Form()
+        local cfg = _G_Config.MM2
+        if cfg then
+            newRow(formMM2, "TP to Murderer"):Right():Button({
+                Label = "TP to Murderer",
+                Pushed = function()
+                    local m = _G.getMurderer and _G.getMurderer() or nil
+                    if m and m.Character and m.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        LocalPlayer.Character.HumanoidRootPart.CFrame = m.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+                        AxiomNotify("MM2", "Teleported to murderer", _G_Config)
+                    else
+                        AxiomNotify("MM2", "No murderer found", _G_Config)
+                    end
+                end
+            })
+            newRow(formMM2, "TP to Sheriff"):Right():Button({
+                Label = "TP to Sheriff",
+                Pushed = function()
+                    local s = _G.getSheriff and _G.getSheriff() or nil
+                    if s and s.Character and s.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        LocalPlayer.Character.HumanoidRootPart.CFrame = s.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+                        AxiomNotify("MM2", "Teleported to sheriff", _G_Config)
+                    else
+                        AxiomNotify("MM2", "No sheriff found", _G_Config)
+                    end
+                end
+            })
+        end
+    end
+
+    do
+        local tab = pages:Tab({ Title = "Misc", Icon = resolveIcon(iconBase.."misc.png", "rbxassetid://129804286574492") })
+        axiomTabs.Misc = tab
+        local sec = tab:PageSection({ Title = "Misc" })
+        local form = sec:Form()
+        newRow(form, "Zoom System"):Right():Toggle({ Value=_G_Config.Misc.ZoomEnabled, ValueChanged=function(_,v) _G_Config.Misc.ZoomEnabled=v end })
+        pullDown(newRow(form, "Zoom Activation"):Right(), {"Hold","Toggle","Always On"}, ({Hold=1,Toggle=2,["Always On"]=3})[_G_Config.Misc.ZoomMode] or 2, function(i) _G_Config.Misc.ZoomMode=( {"Hold","Toggle","Always On"})[i] end)
+        newRow(form, "Zoom Field"):Right():Slider({ Minimum=5, Maximum=60, Value=_G_Config.Misc.ZoomAmount, ValueChanged=function(_,v) _G_Config.Misc.ZoomAmount=v end })
+        newRow(form, "Zoom Keybind"):Right():KeybindField({ Value=_G_Config.Misc.ZoomKey, ValueChanged=function(_,k)
+            _G_Config.Misc.ZoomKey = k
+            local conflicts = getKeybindConflictNames(k, "Zoom")
+            if #conflicts > 0 then AxiomNotify("Axiom.win", "Key already used by: "..table.concat(conflicts, ", "), _G_Config) end
+        end })
+        newRow(form, "Streamer Mode"):Right():Toggle({ Value=_G_Config.Misc.StreamerMode, ValueChanged=function(_,v) _G_Config.Misc.StreamerMode=v AxiomNotify("Axiom.win", "Streamer "..(v and "enabled" or "disabled"), _G_Config) end })
+        newRow(form, "Others Spoof"):Right():TextField({ Value=_G_Config.Misc.SpoofName or "Anonymous", ValueChanged=function(_,v) _G_Config.Misc.SpoofName=v end })
+        newRow(form, "Self Spoof"):Right():TextField({ Value=_G_Config.Misc.MySpoofName or "Anonymous", ValueChanged=function(_,v) _G_Config.Misc.MySpoofName=v end })
+        newRow(form, "Instant Prompt"):Right():Toggle({ Value=_G_Config.Misc.ProximityPromptInstant or false, ValueChanged=function(_,v) _G_Config.Misc.ProximityPromptInstant=v end })
+        local secB = tab:PageSection({ Title = "Settings" })
+        local formB = secB:Form()
+        newRow(formB, "Reset Settings"):Right():Button({ Label = "Reset", Pushed = function() AxiomResetSettings() end })
+        newRow(formB, "Reset Misc"):Right():Button({ Label = "Reset", Pushed = function() AxiomResetSection("Misc", "Misc") end })
+        newRow(formB, "Unload Axiom"):Right():Button({ Label = "Unload", Pushed = function()
+            AxiomDisconnectAll()
+            AxiomNotify("Axiom.win", "Connections disconnected. Re-execute to reload.", _G_Config)
+        end })
+        local secMM2 = tab:PageSection({ Title = "MM2" })
+        local formMM2 = secMM2:Form()
+        local cfg = _G_Config.MM2
+        if cfg then
+            newRow(formMM2, "Auto Farm Coins"):Right():Toggle({ Value = cfg.AutoFarmCoins, ValueChanged = function(_, v) cfg.AutoFarmCoins = v end })
+        end
+    end
+
+    _G.AxiomTabs = axiomTabs
+    _G.AxiomWindow = window
+    return window
+end
+
+local Window = __axiom_build_ui_with_cascade(_G_Config)
+if not Window then
+    return
+end
+
+local function getPingMs()
+    local stats = game:GetService("Stats")
+    local ping = 0
+    local ok = pcall(function()
+        local network = stats:FindFirstChild("Network")
+        local serverStats = network and network:FindFirstChild("ServerStatsItem")
+        local dataPing = serverStats and serverStats:FindFirstChild("Data Ping")
+        if dataPing and dataPing.GetValueString then
+            local s = dataPing:GetValueString()
+            ping = tonumber(s:match("(%d+%.?%d*)")) or 0
+        end
+    end)
+    if not ok then ping = 0 end
+    return ping
+end
+
+local Watermark = { Gui = nil, Frame = nil, Title = nil, Body = nil, Accum = 0, Frames = 0, Fps = 0, Ping = 0 }
+
+local function ensureWatermark()
+    if not _G_Config.Misc.WatermarkEnabled then
+        if Watermark.Gui then Watermark.Gui:Destroy() Watermark.Gui = nil Watermark.Frame = nil Watermark.Title = nil Watermark.Body = nil end
+        return
+    end
+    if Watermark.Gui and Watermark.Gui.Parent then return end
+    local sg = Instance.new("ScreenGui")
+    sg.Name = "AxiomWatermark"
+    sg.DisplayOrder = 9998
+    sg.IgnoreGuiInset = true
+    sg.ResetOnSpawn = false
+    sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    sg.Parent = (gethui and gethui()) or game:GetService("CoreGui")
+    local f = Instance.new("Frame")
+    f.AnchorPoint = Vector2.new(0, 0)
+    f.Position = UDim2.new(0, 16, 0, 16)
+    f.Size = UDim2.fromOffset(340, 50)
+    f.BorderSizePixel = 0
+    f.Parent = sg
+    Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
+    local titleL = Instance.new("TextLabel")
+    titleL.BackgroundTransparency = 1
+    titleL.TextXAlignment = Enum.TextXAlignment.Left
+    titleL.TextYAlignment = Enum.TextYAlignment.Top
+    titleL.FontFace = Font.new("rbxassetid://12187365364")
+    titleL.TextSize = 16
+    titleL.Text = "Axiom.win"
+    titleL.Position = UDim2.fromOffset(10, 6)
+    titleL.Size = UDim2.new(1, -20, 0, 20)
+    titleL.Parent = f
+    local bodyL = Instance.new("TextLabel")
+    bodyL.BackgroundTransparency = 1
+    bodyL.TextXAlignment = Enum.TextXAlignment.Left
+    bodyL.TextYAlignment = Enum.TextYAlignment.Top
+    bodyL.FontFace = Font.new("rbxassetid://12187365364")
+    bodyL.TextSize = 14
+    bodyL.TextWrapped = false
+    bodyL.Position = UDim2.fromOffset(10, 26)
+    bodyL.Size = UDim2.new(1, -20, 1, -34)
+    bodyL.Parent = f
+    Watermark.Gui = sg
+    Watermark.Frame = f
+    Watermark.Title = titleL
+    Watermark.Body = bodyL
+end
+
+local TargetHud = {
+    Gui = nil,
+    Frame = nil,
+    Title = nil,
+    Body = nil,
+    Avatar = nil,
+    LastUserId = 0
+}
+
+local function ensureTargetHud()
+    if TargetHud.Gui and TargetHud.Gui.Parent then
+        return
+    end
+    local sg = Instance.new("ScreenGui")
+    sg.Name = "AxiomTargetHUD"
+    sg.DisplayOrder = 9997
+    sg.IgnoreGuiInset = true
+    sg.ResetOnSpawn = false
+    sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    sg.Parent = (gethui and gethui()) or game:GetService("CoreGui")
+
+    local f = Instance.new("Frame")
+    f.AnchorPoint = Vector2.new(1, 0)
+    f.Position = UDim2.new(1, -16, 0, 80)
+    f.Size = UDim2.fromOffset(300, 70)
+    f.BorderSizePixel = 0
+    f.Parent = sg
+    local corner = Instance.new("UICorner", f)
+    corner.CornerRadius = UDim.new(0, 8)
+
+    local avatar = Instance.new("ImageLabel")
+    avatar.BackgroundTransparency = 1
+    avatar.Size = UDim2.fromOffset(48, 48)
+    avatar.Position = UDim2.fromOffset(10, 10)
+    avatar.Image = ""
+    avatar.Parent = f
+
+    local titleL = Instance.new("TextLabel")
+    titleL.BackgroundTransparency = 1
+    titleL.TextXAlignment = Enum.TextXAlignment.Left
+    titleL.FontFace = Font.new("rbxassetid://12187365364")
+    titleL.TextSize = 16
+    titleL.Text = ""
+    titleL.Position = UDim2.fromOffset(66, 8)
+    titleL.Size = UDim2.new(1, -76, 0, 20)
+    titleL.Parent = f
+
+    local bodyL = Instance.new("TextLabel")
+    bodyL.BackgroundTransparency = 1
+    bodyL.TextXAlignment = Enum.TextXAlignment.Left
+    bodyL.FontFace = Font.new("rbxassetid://12187365364")
+    bodyL.TextSize = 14
+    bodyL.TextWrapped = true
+    bodyL.Text = ""
+    bodyL.Position = UDim2.fromOffset(66, 28)
+    bodyL.Size = UDim2.new(1, -76, 1, -34)
+    bodyL.Parent = f
+
+    TargetHud.Gui = sg
+    TargetHud.Frame = f
+    TargetHud.Title = titleL
+    TargetHud.Body = bodyL
+    TargetHud.Avatar = avatar
+end
+
+local function AxiomMovementCleanup(hrp, keepFly, keepSpeed)
+    if not hrp or not hrp.Parent then return end
+    pcall(function()
+        if not keepFly then
+            local bf = hrp:FindFirstChild("Axiom_Fly")
+            if bf then bf:Destroy() end
+        end
+        if not keepSpeed then
+            local bs = hrp:FindFirstChild("Axiom_Speed")
+            if bs then bs:Destroy() end
+        end
+        if not keepFly and not keepSpeed then
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+        end
+        if not _G_Config.Movement.FreecamActive then
+            hrp.Anchored = false
+        end
+    end)
+end
+
+local function AxiomHardReset()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        AxiomMovementCleanup(hrp, false, false)
+    end
+end
+
+local function hasMultipleTeams()
+    local ok, list = pcall(function()
+        return Teams:GetChildren()
+    end)
+    return ok and #list > 1
+end
+
+local function escapePattern(str)
+    return (str:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1"))
+end
+
+local function buildSpoofMap()
+    local map = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        local name = (p == LocalPlayer) and _G_Config.Misc.MySpoofName or _G_Config.Misc.SpoofName
+        map[p.Name] = name
+        map[p.DisplayName] = name
+    end
+    return map
+end
+
+local function getSpoofedName(player)
+    if _G_Config.Misc.StreamerMode then
+        return (player == LocalPlayer) and _G_Config.Misc.MySpoofName or _G_Config.Misc.SpoofName
+    end
+    return player.DisplayName or player.Name
+end
+
+local function applySpoofToPlayer(p)
+    if not _G_Config.Misc.StreamerMode then
+        return
+    end
+    local name = (p == LocalPlayer) and _G_Config.Misc.MySpoofName or _G_Config.Misc.SpoofName
+    p.DisplayName = name
+    local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.DisplayName = name
+    end
+end
+
+local ESP = { Entries = {}, EnabledCache = false }
+local HitboxState = { Players = {} }
+local HitboxSettingsCache = {
+    Enabled = false,
+    ExpandSize = nil,
+    Transparency = nil,
+    Color = nil,
+    OutlineColor = nil,
+    ShowOutline = nil,
+    Head = nil,
+    Torso = nil
+}
+
+local function safeRemoveDrawing(obj)
+    if obj then
+        pcall(function() obj:Remove() end)
+    end
+end
+
+local function safeDestroy(inst)
+    if inst then
+        pcall(function() inst:Destroy() end)
+    end
+end
+
+local function getCharacterParts(char)
+    if not char then return nil end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local head = char:FindFirstChild("Head")
+    local upperTorso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    return hrp, head, upperTorso, hum
+end
+
+local function createLine()
+    local l = Drawing.new("Line")
+    l.Visible = false
+    l.From = Vector2.new(0,0)
+    l.To = Vector2.new(0,0)
+    l.Thickness = 1
+    l.Transparency = 1
+    l.Color = Color3.new(1,1,1)
+    return l
+end
+
+local function createText()
+    local t = Drawing.new("Text")
+    t.Visible = false
+    t.Center = true
+    t.Outline = true
+    t.Font = 2
+    t.Size = 13
+    t.Transparency = 1
+    t.Color = Color3.new(1,1,1)
+    t.Text = ""
+    return t
+end
+
+local function createCircle()
+    local c = Drawing.new("Circle")
+    c.Visible = false
+    c.Filled = true
+    c.Radius = 3
+    c.Thickness = 1
+    c.Transparency = 1
+    c.Color = Color3.new(1,1,1)
+    return c
+end
+
+local function createTriangle()
+    local tri = Drawing.new("Triangle")
+    tri.Visible = false
+    tri.Filled = true
+    tri.Transparency = 1
+    tri.Color = Color3.new(1,1,1)
+    tri.PointA = Vector2.new(0,0)
+    tri.PointB = Vector2.new(0,0)
+    tri.PointC = Vector2.new(0,0)
+    return tri
+end
+
+local function clearESPEntry(entry)
+    if not entry then return end
+    if entry.lines2D then for _, l in ipairs(entry.lines2D) do safeRemoveDrawing(l) end end
+    if entry.lines3D then for _, l in ipairs(entry.lines3D) do safeRemoveDrawing(l) end end
+    if entry.skeleton then for _, l in ipairs(entry.skeleton) do safeRemoveDrawing(l) end end
+    safeRemoveDrawing(entry.tracer)
+    safeRemoveDrawing(entry.headDot)
+    safeRemoveDrawing(entry.nameText)
+    safeRemoveDrawing(entry.displayNameText)
+    safeRemoveDrawing(entry.distanceText)
+    safeRemoveDrawing(entry.healthText)
+    safeRemoveDrawing(entry.healthBar)
+    safeRemoveDrawing(entry.toolText)
+    safeRemoveDrawing(entry.arrow)
+    safeDestroy(entry.highlight)
+    safeDestroy(entry.toolHighlight)
+    safeDestroy(entry.chamsBox)
+end
+
+local function ensureESPEntry(player)
+    if ESP.Entries[player] then return end
+    local entry = {}
+    entry.lines2D = { createLine(), createLine(), createLine(), createLine() }
+    entry.lines3D = {}
+    for _ = 1, 12 do table.insert(entry.lines3D, createLine()) end
+    entry.skeleton = {}
+    for _ = 1, 12 do table.insert(entry.skeleton, createLine()) end
+    entry.tracer = createLine()
+    entry.headDot = createCircle()
+    entry.nameText = createText()
+    entry.displayNameText = createText()
+    entry.distanceText = createText()
+    entry.healthText = createText()
+    entry.healthBar = createLine()
+    entry.toolText = createText()
+    entry.arrow = createTriangle()
+    entry.highlight = Instance.new("Highlight")
+    entry.highlight.Enabled = false
+    entry.highlight.Parent = Workspace
+    entry.toolHighlight = Instance.new("Highlight")
+    entry.toolHighlight.Enabled = false
+    entry.toolHighlight.Parent = Workspace
+    entry.chamsBox = Instance.new("BoxHandleAdornment")
+    entry.chamsBox.Visible = false
+    entry.chamsBox.AlwaysOnTop = true
+    entry.chamsBox.ZIndex = 2
+    entry.chamsBox.Parent = Workspace
+    ESP.Entries[player] = entry
+end
+
+local function removeESPEntry(player)
+    local entry = ESP.Entries[player]
+    if entry then
+        clearESPEntry(entry)
+        ESP.Entries[player] = nil
+    end
+end
+
+local function setLineVisible(lines, visible)
+    for _, l in ipairs(lines) do
+        l.Visible = visible
+    end
+end
+
+local function updateHitboxForPlayer(player)
+    local char = player.Character
+    if not char then return end
+    local hrp, head, torso = getCharacterParts(char)
+    local parts = {}
+    if _G_Config.Hitbox.Head and head then table.insert(parts, head) end
+    if _G_Config.Hitbox.Torso and torso then table.insert(parts, torso) end
+    if #parts == 0 then return end
+
+    HitboxState.Players[player] = HitboxState.Players[player] or { parts = {} }
+    local cache = HitboxState.Players[player].parts
+    for _, part in ipairs(parts) do
+        if not cache[part] then
+            cache[part] = {
+                originalSize = part.Size,
+                fillAdornment = nil,
+                outlineAdornment = nil
+            }
+        end
+        local scale = math.clamp(_G_Config.Hitbox.ExpandSize, 1, 4)
+        part.Size = cache[part].originalSize * scale
+
+        if not cache[part].fillAdornment then
+            local box = Instance.new("BoxHandleAdornment")
+            box.Adornee = part
+            box.AlwaysOnTop = true
+            box.ZIndex = 2
+            box.Parent = Workspace
+            cache[part].fillAdornment = box
+        end
+        local fill = cache[part].fillAdornment
+        fill.Size = part.Size
+        fill.Color3 = _G_Config.Hitbox.Color
+        fill.Transparency = math.clamp(_G_Config.Hitbox.Transparency, 0, 1)
+        fill.Visible = true
+        fill.Adornee = part
+
+        if _G_Config.Hitbox.ShowOutline then
+            if not cache[part].outlineAdornment then
+                local outline = Instance.new("SelectionBox")
+                outline.Adornee = part
+                outline.LineThickness = 0.05
+                outline.Parent = Workspace
+                cache[part].outlineAdornment = outline
+            end
+            local outline = cache[part].outlineAdornment
+            outline.Color3 = _G_Config.Hitbox.OutlineColor
+            outline.LineThickness = 0.05
+            outline.Visible = true
+            outline.Adornee = part
+        elseif cache[part].outlineAdornment then
+            cache[part].outlineAdornment.Visible = false
+        end
+    end
+end
+
+local function resetHitboxForPlayer(player)
+    local state = HitboxState.Players[player]
+    if not state then return end
+    for part, data in pairs(state.parts or {}) do
+        if part and data.originalSize then
+            pcall(function() part.Size = data.originalSize end)
+        end
+        if data.fillAdornment then
+            safeDestroy(data.fillAdornment)
+        end
+        if data.outlineAdornment then
+            safeDestroy(data.outlineAdornment)
+        end
+    end
+    HitboxState.Players[player] = nil
+end
+
+local function resetAllHitboxes()
+    for _, p in ipairs(Players:GetPlayers()) do
+        resetHitboxForPlayer(p)
+    end
+end
+
+local function bindPlayer(player)
+    if player == LocalPlayer then return end
+    ensureESPEntry(player)
+    player.CharacterAdded:Connect(function()
+        if _G_Config.Hitbox.Enabled then
+            task.delay(0.2, function()
+                resetHitboxForPlayer(player)
+                updateHitboxForPlayer(player)
+            end)
+        end
+    end)
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+    bindPlayer(p)
+end
+AxiomTrackConnection(Players.PlayerAdded:Connect(bindPlayer))
+AxiomTrackConnection(Players.PlayerAdded:Connect(function(p)
+    if _G_Config.Misc.StreamerMode then
+        task.defer(function()
+            applySpoofToPlayer(p)
+        end)
+    end
+end))
+AxiomTrackConnection(Players.PlayerRemoving:Connect(function(p)
+    removeESPEntry(p)
+    resetHitboxForPlayer(p)
+end))
+AxiomTrackConnection(Players.PlayerAdded:Connect(function(p)
+    p.CharacterAdded:Connect(function()
+        if _G_Config.Misc.StreamerMode then
+            task.defer(function()
+                applySpoofToPlayer(p)
+            end)
+        end
+    end)
+end))
+
+local function updateESP()
+    if not _G_Config.Visuals.Enabled then
+        if ESP.EnabledCache then
+            for p, _ in pairs(ESP.Entries) do
+                removeESPEntry(p)
+            end
+            ESP.EnabledCache = false
+        end
+        return
+    end
+    ESP.EnabledCache = true
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == LocalPlayer then continue end
+        local char = player.Character
+        local hrp, head, torso, hum = getCharacterParts(char)
+        if not char or not hum or hum.Health <= 0 then
+            removeESPEntry(player)
+            continue
+        end
+        ensureESPEntry(player)
+        local entry = ESP.Entries[player]
+
+        local teamBlocked = _G_Config.Visuals.TeamCheck and hasMultipleTeams() and player.Team == LocalPlayer.Team
+        local localHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local distance = (hrp and localHrp) and (localHrp.Position - hrp.Position).Magnitude or math.huge
+        local distLimit = math.max(0, tonumber(_G_Config.Visuals.DistanceLimit) or 1000)
+        local distAllowed = distance <= distLimit
+
+        if teamBlocked or not hrp or not distAllowed then
+            setLineVisible(entry.lines2D, false)
+            setLineVisible(entry.lines3D, false)
+            setLineVisible(entry.skeleton, false)
+            entry.tracer.Visible = false
+            entry.headDot.Visible = false
+            entry.nameText.Visible = false
+            entry.displayNameText.Visible = false
+            entry.distanceText.Visible = false
+            entry.healthText.Visible = false
+            entry.healthBar.Visible = false
+            entry.toolText.Visible = false
+            entry.arrow.Visible = false
+            entry.highlight.Enabled = false
+            entry.toolHighlight.Enabled = false
+            entry.chamsBox.Visible = false
+            continue
+        end
+
+        local ok, bbCFrame, bbSize = pcall(function()
+            local cf, sz = char:GetBoundingBox()
+            return cf, sz
+        end)
+        if not ok or not bbCFrame or not bbSize then
+            continue
+        end
+
+        local corners = {
+            Vector3.new(-1,  1, -1),
+            Vector3.new( 1,  1, -1),
+            Vector3.new( 1, -1, -1),
+            Vector3.new(-1, -1, -1),
+            Vector3.new(-1,  1,  1),
+            Vector3.new( 1,  1,  1),
+            Vector3.new( 1, -1,  1),
+            Vector3.new(-1, -1,  1),
+        }
+
+        local minX, minY = math.huge, math.huge
+        local maxX, maxY = -math.huge, -math.huge
+        local onScreenAny = false
+        local projected = {}
+        for i, v in ipairs(corners) do
+            local world = bbCFrame * (v * (bbSize / 2))
+            local sp, onScreen = Camera:WorldToViewportPoint(world)
+            projected[i] = Vector2.new(sp.X, sp.Y)
+            if sp.Z > 0 then
+                minX = math.min(minX, sp.X)
+                minY = math.min(minY, sp.Y)
+                maxX = math.max(maxX, sp.X)
+                maxY = math.max(maxY, sp.Y)
+                onScreenAny = onScreenAny or onScreen
+            end
+        end
+
+        local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+        local hrpScreen, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+        local hrp2d = Vector2.new(hrpScreen.X, hrpScreen.Y)
+        local textSize = math.max(8, math.floor(tonumber(_G_Config.Visuals.TextSize) or 13))
+
+        local box2dVisible = _G_Config.Visuals.Box2D and onScreenAny
+        setLineVisible(entry.lines2D, box2dVisible)
+        if box2dVisible then
+            local col = _G_Config.Visuals.Box2DColor
+            local alpha = math.clamp(_G_Config.Visuals.Box2DTransparency, 0, 1)
+            local lines = entry.lines2D
+            lines[1].From, lines[1].To = Vector2.new(minX, minY), Vector2.new(maxX, minY)
+            lines[2].From, lines[2].To = Vector2.new(maxX, minY), Vector2.new(maxX, maxY)
+            lines[3].From, lines[3].To = Vector2.new(maxX, maxY), Vector2.new(minX, maxY)
+            lines[4].From, lines[4].To = Vector2.new(minX, maxY), Vector2.new(minX, minY)
+            for _, l in ipairs(lines) do l.Color = col l.Transparency = alpha end
+            for _, l in ipairs(lines) do l.Thickness = 2 end
+        end
+
+        local box3dVisible = _G_Config.Visuals.Box3D and onScreenAny
+        setLineVisible(entry.lines3D, box3dVisible)
+        if box3dVisible then
+            local col = _G_Config.Visuals.Box3DColor
+            local alpha = math.clamp(_G_Config.Visuals.Box3DTransparency, 0, 1)
+            local p = projected
+            local idxPairs = {
+                {1,2},{2,3},{3,4},{4,1},
+                {5,6},{6,7},{7,8},{8,5},
+                {1,5},{2,6},{3,7},{4,8}
+            }
+            for i, pair in ipairs(idxPairs) do
+                local l = entry.lines3D[i]
+                l.From = p[pair[1]]
+                l.To = p[pair[2]]
+                l.Color = col
+                l.Transparency = alpha
+                l.Thickness = 1.5
+            end
+        end
+
+        local skelVisible = _G_Config.Visuals.Skeleton and onScreenAny
+        setLineVisible(entry.skeleton, skelVisible)
+        if skelVisible then
+            local col = _G_Config.Visuals.SkeletonColor
+            local alpha = math.clamp(_G_Config.Visuals.SkeletonTransparency, 0, 1)
+            local joints = {
+                {"Head","UpperTorso"},
+                {"UpperTorso","LowerTorso"},
+                {"UpperTorso","LeftUpperArm"},
+                {"LeftUpperArm","LeftLowerArm"},
+                {"LeftLowerArm","LeftHand"},
+                {"UpperTorso","RightUpperArm"},
+                {"RightUpperArm","RightLowerArm"},
+                {"RightLowerArm","RightHand"},
+                {"LowerTorso","LeftUpperLeg"},
+                {"LeftUpperLeg","LeftLowerLeg"},
+                {"LeftLowerLeg","LeftFoot"},
+                {"LowerTorso","RightUpperLeg"},
+            }
+            for i, pair in ipairs(joints) do
+                local p1 = char:FindFirstChild(pair[1])
+                local p2 = char:FindFirstChild(pair[2])
+                local l = entry.skeleton[i]
+                if p1 and p2 then
+                    local s1 = Camera:WorldToViewportPoint(p1.Position)
+                    local s2 = Camera:WorldToViewportPoint(p2.Position)
+                    l.From = Vector2.new(s1.X, s1.Y)
+                    l.To = Vector2.new(s2.X, s2.Y)
+                    l.Color = col
+                    l.Transparency = alpha
+                    l.Thickness = 1.5
+                    l.Visible = true
+                else
+                    l.Visible = false
+                end
+            end
+        end
+
+        if _G_Config.Visuals.Tracer and onScreenAny then
+            entry.tracer.Visible = true
+            entry.tracer.Color = _G_Config.Visuals.TracerColor
+            entry.tracer.Transparency = math.clamp(_G_Config.Visuals.TracerTransparency, 0, 1)
+            entry.tracer.Thickness = 1.5
+            local originX, originY
+            if _G_Config.Visuals.TracerOrigin == "Mouse" then
+                local mousePos = UserInputService:GetMouseLocation()
+                originX, originY = mousePos.X, mousePos.Y
+            else
+                originY = ( _G_Config.Visuals.TracerOrigin == "Top" and 0 ) or ( _G_Config.Visuals.TracerOrigin == "Center" and center.Y ) or Camera.ViewportSize.Y
+                originX = center.X
+            end
+            entry.tracer.From = Vector2.new(originX, originY)
+            entry.tracer.To = hrp2d
+        else
+            entry.tracer.Visible = false
+        end
+
+        if _G_Config.Visuals.HeadDot and head then
+            local headScreen = Camera:WorldToViewportPoint(head.Position)
+            entry.headDot.Visible = headScreen.Z > 0
+            entry.headDot.Position = Vector2.new(headScreen.X, headScreen.Y)
+            entry.headDot.Radius = _G_Config.Visuals.HeadDotRadius
+            entry.headDot.Color = _G_Config.Visuals.HeadDotColor
+            entry.headDot.Transparency = math.clamp(_G_Config.Visuals.HeadDotTransparency, 0, 1)
+        else
+            entry.headDot.Visible = false
+        end
+
+        local infoPos = _G_Config.Visuals.InfoPosition
+        local textY = (infoPos == "Bottom") and (maxY + 2) or (minY - 16)
+        local textStep = 14
+        if _G_Config.Visuals.Name then
+            entry.nameText.Visible = true
+            entry.nameText.Text = player.Name
+            entry.nameText.Size = textSize
+            entry.nameText.Color = _G_Config.Visuals.TextColor
+            entry.nameText.Transparency = math.clamp(_G_Config.Visuals.TextTransparency, 0, 1)
+            entry.nameText.Position = Vector2.new((minX+maxX)/2, textY)
+            textY = (infoPos == "Bottom") and (textY + textStep) or (textY - textStep)
+        else
+            entry.nameText.Visible = false
+        end
+        if _G_Config.Visuals.DisplayName then
+            entry.displayNameText.Visible = true
+            entry.displayNameText.Text = getSpoofedName(player)
+            entry.displayNameText.Size = textSize
+            entry.displayNameText.Color = _G_Config.Visuals.TextColor
+            entry.displayNameText.Transparency = math.clamp(_G_Config.Visuals.TextTransparency, 0, 1)
+            entry.displayNameText.Position = Vector2.new((minX+maxX)/2, textY)
+            textY = (infoPos == "Bottom") and (textY + textStep) or (textY - textStep)
+        else
+            entry.displayNameText.Visible = false
+        end
+        if _G_Config.Visuals.Distance then
+            entry.distanceText.Visible = true
+            entry.distanceText.Text = string.format("%dm", math.floor(distance))
+            entry.distanceText.Size = textSize
+            entry.distanceText.Color = _G_Config.Visuals.TextColor
+            entry.distanceText.Transparency = math.clamp(_G_Config.Visuals.TextTransparency, 0, 1)
+            entry.distanceText.Position = Vector2.new((minX+maxX)/2, (infoPos == "Bottom") and (textY) or (maxY + 2))
+            if infoPos == "Bottom" then
+                textY = textY + textStep
+            end
+        else
+            entry.distanceText.Visible = false
+        end
+        local healthMode = _G_Config.Visuals.HealthMode
+        if _G_Config.Visuals.Health and hum and (healthMode == "Text" or healthMode == "Both") then
+            entry.healthText.Visible = true
+            entry.healthText.Text = string.format("HP: %d", math.floor(hum.Health))
+            entry.healthText.Size = textSize
+            entry.healthText.Color = _G_Config.Visuals.TextColor
+            entry.healthText.Transparency = math.clamp(_G_Config.Visuals.TextTransparency, 0, 1)
+            entry.healthText.Position = Vector2.new((minX+maxX)/2, (infoPos == "Bottom") and (textY) or (maxY + 16))
+            if infoPos == "Bottom" then
+                textY = textY + textStep
+            end
+        else
+            entry.healthText.Visible = false
+        end
+        if _G_Config.Visuals.Health and hum and (healthMode == "Bar" or healthMode == "Both") then
+            local healthPct = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+            local barX = (_G_Config.Visuals.HealthBarSide == "Right") and (maxX + 4) or (minX - 4)
+            local barTop = minY
+            local barBottom = maxY
+            local barHeight = barBottom - barTop
+            entry.healthBar.Visible = true
+            entry.healthBar.From = Vector2.new(barX, barBottom)
+            entry.healthBar.To = Vector2.new(barX, barBottom - (barHeight * healthPct))
+            entry.healthBar.Thickness = 3
+            entry.healthBar.Color = Color3.fromRGB(255 - math.floor(200 * healthPct), 40 + math.floor(180 * healthPct), 40)
+            entry.healthBar.Transparency = 1
+        else
+            entry.healthBar.Visible = false
+        end
+
+        local tool = char and char:FindFirstChildOfClass("Tool")
+        if _G_Config.Visuals.ToolText and tool then
+            entry.toolText.Visible = true
+            entry.toolText.Text = tool.Name
+            entry.toolText.Size = textSize
+            entry.toolText.Color = _G_Config.Visuals.TextColor
+            entry.toolText.Transparency = math.clamp(_G_Config.Visuals.TextTransparency, 0, 1)
+            entry.toolText.Position = Vector2.new((minX+maxX)/2, (infoPos == "Bottom") and (textY) or (minY - 30))
+            if infoPos == "Bottom" then
+                textY = textY + textStep
+            end
+        else
+            entry.toolText.Visible = false
+        end
+
+        if _G_Config.Visuals.Chams and char then
+            if _G_Config.Visuals.ChamsMethod == "Highlight" then
+                entry.highlight.Enabled = true
+                entry.highlight.Adornee = char
+                entry.highlight.FillColor = _G_Config.Visuals.ChamsColor
+                entry.highlight.OutlineColor = _G_Config.Visuals.ChamsColor
+                entry.highlight.FillTransparency = math.clamp(_G_Config.Visuals.ChamsTransparency, 0, 1)
+                entry.highlight.OutlineTransparency = math.clamp(_G_Config.Visuals.ChamsTransparency * 0.6, 0, 1)
+                entry.chamsBox.Visible = false
+            else
+                entry.highlight.Enabled = false
+                entry.chamsBox.Visible = true
+                entry.chamsBox.Adornee = hrp
+                entry.chamsBox.Size = bbSize
+                entry.chamsBox.Color3 = _G_Config.Visuals.ChamsColor
+                entry.chamsBox.Transparency = math.clamp(_G_Config.Visuals.ChamsTransparency, 0, 1)
+            end
+        else
+            entry.highlight.Enabled = false
+            entry.chamsBox.Visible = false
+        end
+
+        if _G_Config.Visuals.ToolChams and tool then
+            entry.toolHighlight.Enabled = true
+            entry.toolHighlight.Adornee = tool
+            entry.toolHighlight.FillColor = _G_Config.Visuals.ToolColor
+            entry.toolHighlight.OutlineColor = _G_Config.Visuals.ToolColor
+            entry.toolHighlight.FillTransparency = math.clamp(_G_Config.Visuals.ToolTransparency, 0, 1)
+            entry.toolHighlight.OutlineTransparency = math.clamp(_G_Config.Visuals.ToolTransparency, 0, 1)
+        else
+            entry.toolHighlight.Enabled = false
+        end
+
+        if _G_Config.Visuals.OffscreenArrows and not onScreen then
+            local dir = (hrp2d - center)
+            if dir.Magnitude > 0 then
+                dir = dir.Unit
+                if hrpScreen.Z < 0 then
+                    dir = -dir
+                end
+                local w = Camera.ViewportSize.X
+                local h = Camera.ViewportSize.Y
+                local padding = 20
+                local tX = dir.X ~= 0 and ((dir.X > 0 and (w - padding - center.X) or (padding - center.X)) / dir.X) or math.huge
+                local tY = dir.Y ~= 0 and ((dir.Y > 0 and (h - padding - center.Y) or (padding - center.Y)) / dir.Y) or math.huge
+                local t = math.min(tX, tY)
+                local pos = center + dir * t
+                local perp = Vector2.new(-dir.Y, dir.X)
+                local size = math.clamp(_G_Config.Visuals.OffscreenArrowSize, 6, 30)
+                entry.arrow.PointA = pos
+                entry.arrow.PointB = pos - dir * size + perp * (size * 0.6)
+                entry.arrow.PointC = pos - dir * size - perp * (size * 0.6)
+                entry.arrow.Color = _G_Config.Visuals.OffscreenArrowColor
+                entry.arrow.Transparency = math.clamp(_G_Config.Visuals.OffscreenArrowTransparency, 0, 1)
+                entry.arrow.Visible = true
+            else
+                entry.arrow.Visible = false
+            end
+        else
+            entry.arrow.Visible = false
+        end
+    end
+end
+
+local function GetClosestTarget()
+    local target = nil
+    local distLimit = (_G_Config.Aimbot.FOVCircle and _G_Config.Aimbot.FOV) or math.huge
+    local mPos = UserInputService:GetMouseLocation()
+    local localHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local part = p.Character:FindFirstChild(_G_Config.Aimbot.TargetPart)
+            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+            if part and hum and hum.Health > 0 then
+                if _G_Config.Aimbot.TeamCheck and hasMultipleTeams() and p.Team == LocalPlayer.Team then continue end
+                local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
+                if onScreen then
+                    if _G_Config.Aimbot.WallCheck then
+                        local ok, blocked = pcall(function()
+                            local params = RaycastParams.new()
+                            params.FilterType = Enum.RaycastFilterType.Blacklist
+                            params.FilterDescendantsInstances = {LocalPlayer.Character}
+                            local dir = part.Position - Camera.CFrame.Position
+                            local ray = Workspace:Raycast(Camera.CFrame.Position, dir, params)
+                            return ray and ray.Instance and not ray.Instance:IsDescendantOf(p.Character)
+                        end)
+                        if ok and blocked then continue end
+                    end
+
+                    local currentPriorityValue = math.huge
+                    if _G_Config.Aimbot.Prioritization == "Closest Crosshair" then
+                        currentPriorityValue = (Vector2.new(screenPos.X, screenPos.Y) - mPos).Magnitude
+                    elseif _G_Config.Aimbot.Prioritization == "Closest Distance" then
+                        if localHrp then
+                            currentPriorityValue = (localHrp.Position - part.Position).Magnitude
+                        end
+                    elseif _G_Config.Aimbot.Prioritization == "Lowest Health" then
+                        currentPriorityValue = hum.Health
+                    end
+
+                    if currentPriorityValue < distLimit then target = part distLimit = currentPriorityValue end
+                end
+            end
+        end
+    end
+    return target
+end
+
+AxiomTrackConnection(UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == _G_Config.Movement.SpeedKey then
+        if _G_Config.Movement.SpeedEnabled and _G_Config.Movement.SpeedMode ~= "Always On" then
+            if _G_Config.Movement.SpeedMode == "Toggle" then _G_Config.Movement.SpeedActive = not _G_Config.Movement.SpeedActive else _G_Config.Movement.SpeedActive = true end
+        end
+    end
+    if input.KeyCode == _G_Config.Movement.FlyKey then
+        if _G_Config.Movement.FlyEnabled and _G_Config.Movement.FlyMode ~= "Always On" then
+            if _G_Config.Movement.FlyMode == "Toggle" then _G_Config.Movement.FlyActive = not _G_Config.Movement.FlyActive else _G_Config.Movement.FlyActive = true end
+        end
+    end
+    if input.KeyCode == _G_Config.Movement.FreecamKey and _G_Config.Movement.FreecamKey ~= Enum.KeyCode.Unknown then
+        if _G_Config.Movement.FreecamEnabled and _G_Config.Movement.FreecamMode ~= "Always On" then
+            if _G_Config.Movement.FreecamMode == "Toggle" then _G_Config.Movement.FreecamActive = not _G_Config.Movement.FreecamActive else _G_Config.Movement.FreecamActive = true end
+        end
+        if _G_Config.Movement.FreecamActive then 
+            rotationCache.mouseBehavior = UserInputService.MouseBehavior
+            rotationCache.mouseIconEnabled = UserInputService.MouseIconEnabled
+            rotationCache.cameraSubject = Camera.CameraSubject
+            rotationCache.shiftLockActive = UserGameSettings.RotationType == Enum.RotationType.CameraRelative
+        end
+    end
+    if input.KeyCode == _G_Config.Misc.ZoomKey then 
+        if _G_Config.Misc.ZoomEnabled and _G_Config.Misc.ZoomMode ~= "Always On" then
+            if _G_Config.Misc.ZoomMode == "Toggle" then _G_Config.Misc.ZoomActive = not _G_Config.Misc.ZoomActive else _G_Config.Misc.ZoomActive = true end
+        end
+    end
+    if input.KeyCode == _G_Config.Aimbot.Key or input.UserInputType == _G_Config.Aimbot.Key then
+        if _G_Config.Aimbot.Enabled and _G_Config.Aimbot.Mode ~= "Always On" then
+            if _G_Config.Aimbot.Mode == "Toggle" then _G_Config.Aimbot.Active = not _G_Config.Aimbot.Active else _G_Config.Aimbot.Active = true end
+        end
+    end
+end))
+
+AxiomTrackConnection(UserInputService.InputEnded:Connect(function(input)
+    if _G_Config.Misc.ZoomMode == "Hold" and input.KeyCode == _G_Config.Misc.ZoomKey then _G_Config.Misc.ZoomActive = false end
+    if _G_Config.Aimbot.Mode == "Hold" and (input.KeyCode == _G_Config.Aimbot.Key or input.UserInputType == _G_Config.Aimbot.Key) then
+        _G_Config.Aimbot.Active = false
+    end
+    if _G_Config.Movement.SpeedMode == "Hold" and input.KeyCode == _G_Config.Movement.SpeedKey then _G_Config.Movement.SpeedActive = false end
+    if _G_Config.Movement.FlyMode == "Hold" and input.KeyCode == _G_Config.Movement.FlyKey then _G_Config.Movement.FlyActive = false end
+    if _G_Config.Movement.FreecamMode == "Hold" and input.KeyCode == _G_Config.Movement.FreecamKey then _G_Config.Movement.FreecamActive = false end
+end))
+
+AxiomTrackConnection(LocalPlayer.CharacterAdded:Connect(function()
+    spinAutoCache = nil
+    task.defer(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then AxiomMovementCleanup(hrp, false, false) end
+    end)
+end))
+
+local dotObj = Drawing.new("Circle")
+local snapLine = Drawing.new("Line")
+local aimbotBTBox = Instance.new("BoxHandleAdornment")
+aimbotBTBox.Visible = false
+aimbotBTBox.AlwaysOnTop = true
+aimbotBTBox.ZIndex = 2
+aimbotBTBox.Color3 = Color3.fromRGB(200, 120, 255)
+aimbotBTBox.Transparency = 0.5
+aimbotBTBox.Parent = Workspace
+dotObj.Filled = true
+snapLine.Visible = false
+snapLine.Thickness = 1
+snapLine.Transparency = 1
+local fovGui = Instance.new("ScreenGui")
+fovGui.Name = "AxiomFOVCircle"
+fovGui.DisplayOrder = 9996
+fovGui.IgnoreGuiInset = true
+fovGui.ResetOnSpawn = false
+fovGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+fovGui.Parent = (gethui and gethui()) or game:GetService("CoreGui")
+local fovFrame = Instance.new("Frame")
+fovFrame.BackgroundTransparency = 1
+fovFrame.BorderSizePixel = 0
+fovFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+fovFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+fovFrame.Size = UDim2.fromOffset(100, 100)
+fovFrame.Visible = false
+fovFrame.Parent = fovGui
+local fovCorner = Instance.new("UICorner", fovFrame)
+fovCorner.CornerRadius = UDim.new(1, 0)
+local fovStroke = Instance.new("UIStroke")
+fovStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+fovStroke.Parent = fovFrame
+
+local freecamCF, freecamRot = Camera.CFrame, Vector2.new(0, 0)
+local lastFreecamMousePos = nil
+local freecamWasActiveLastFrame = false
+local tpWalkAccum = 0
+local streamerAccum = 0
+local freecamActiveLast = false
+local coreGuiAccum = 0
+local coreGuiCache = {}
+local spinAutoCache = nil
+local noclipWasOn = false
+local spyRefreshAccum = 0
+local espAccum = 0
+
+AxiomTrackConnection(RunService.RenderStepped:Connect(function(dt)
+    if _G_Config.Aimbot.Mode == "Always On" then
+        _G_Config.Aimbot.Active = _G_Config.Aimbot.Enabled
+    elseif not _G_Config.Aimbot.Enabled then
+        _G_Config.Aimbot.Active = false
+    end
+    if _G_Config.Movement.SpeedMode == "Always On" then
+        _G_Config.Movement.SpeedActive = _G_Config.Movement.SpeedEnabled
+    elseif not _G_Config.Movement.SpeedEnabled then
+        _G_Config.Movement.SpeedActive = false
+    end
+    if _G_Config.Movement.FlyMode == "Always On" then
+        _G_Config.Movement.FlyActive = _G_Config.Movement.FlyEnabled
+    elseif not _G_Config.Movement.FlyEnabled then
+        _G_Config.Movement.FlyActive = false
+    end
+    if _G_Config.Movement.FreecamMode == "Always On" then
+        _G_Config.Movement.FreecamActive = _G_Config.Movement.FreecamEnabled
+    elseif not _G_Config.Movement.FreecamEnabled then
+        _G_Config.Movement.FreecamActive = false
+    end
+    if _G_Config.Misc.ZoomMode == "Always On" then
+        _G_Config.Misc.ZoomActive = _G_Config.Misc.ZoomEnabled
+    elseif not _G_Config.Misc.ZoomEnabled then
+        _G_Config.Misc.ZoomActive = false
+    end
+    local maxR = math.min(Camera.ViewportSize.X, Camera.ViewportSize.Y) / 2
+    local fovRadius = math.clamp(_G_Config.Aimbot.FOV, 20, maxR)
+    local mousePos = UserInputService:GetMouseLocation()
+    fovFrame.Visible = _G_Config.Aimbot.FOVCircle and _G_Config.Aimbot.Enabled
+    fovFrame.Size = UDim2.fromOffset(fovRadius * 2, fovRadius * 2)
+    fovFrame.Position = UDim2.fromOffset(mousePos.X, mousePos.Y)
+    fovFrame.BackgroundTransparency = _G_Config.Aimbot.FOVFilled and 0.7 or 1
+    fovFrame.BackgroundColor3 = _G_Config.Aimbot.FOVColor
+    fovStroke.Thickness = math.clamp(_G_Config.Aimbot.FOVThickness, 1, 4)
+    fovStroke.Color = _G_Config.Aimbot.FOVColor
+    fovStroke.Transparency = 0
+
+    dotObj.Visible = _G_Config.Visuals.CenterDot
+    dotObj.Radius = _G_Config.Visuals.CenterDotRadius
+    dotObj.Color = _G_Config.Visuals.CenterDotColor
+    dotObj.Position = Camera.ViewportSize / 2
+
+    if _G_Config.Misc.ZoomEnabled and _G_Config.Misc.ZoomActive and _G_Config.Misc.ZoomMethod == "FOV" then
+        local targetFOV = math.clamp(tonumber(_G_Config.Misc.ZoomAmount) or 30, 5, 120)
+        Camera.FieldOfView = Camera.FieldOfView + (targetFOV - Camera.FieldOfView) * 0.15
+    elseif _G_Config.Misc.FOVEnabled then
+        local targetFOV = math.clamp(tonumber(_G_Config.Misc.FOV) or 90, 1, 120)
+        Camera.FieldOfView = Camera.FieldOfView + (targetFOV - Camera.FieldOfView) * 0.15
+    end
+
+    if _G_Config.Movement.FreecamEnabled and _G_Config.Movement.FreecamActive then
+        if _G_Config.Movement.FreecamFreeCursor ~= false then
+            UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+            UserInputService.MouseIconEnabled = true
+        end
+        if not freecamActiveLast then
+            local char = LocalPlayer.Character
+            local head = char and char:FindFirstChild("Head")
+            if head then
+                freecamCF = head.CFrame
+            else
+                freecamCF = Camera.CFrame
+            end
+            local look = Camera.CFrame.LookVector
+            freecamRot = Vector2.new(math.deg(math.atan2(look.X, look.Z)), math.deg(math.asin(look.Y)))
+            lastFreecamMousePos = UserInputService:GetMouseLocation()
+        end
+        freecamActiveLast = true
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then 
+            LocalPlayer.Character.HumanoidRootPart.Anchored = true 
+        end
+        local delta
+        if _G_Config.Movement.FreecamFreeCursor ~= false then
+            local currentMouse = UserInputService:GetMouseLocation()
+            local last = lastFreecamMousePos or currentMouse
+            delta = Vector2.new(currentMouse.X - last.X, currentMouse.Y - last.Y)
+            lastFreecamMousePos = currentMouse
+        else
+            delta = UserInputService:GetMouseDelta()
+            lastFreecamMousePos = nil
+        end
+        freecamRot = freecamRot - (delta * 0.18)
+        freecamRot = Vector2.new(freecamRot.X, math.clamp(freecamRot.Y, -89, 89))
+        local rotCF = CFrame.Angles(0, math.rad(freecamRot.X), 0) * CFrame.Angles(math.rad(freecamRot.Y), 0, 0)
+        local mv = Vector3.new(0, 0, 0)
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then mv = mv + rotCF.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then mv = mv - rotCF.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then mv = mv - rotCF.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then mv = mv + rotCF.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.E) then mv = mv + Vector3.new(0,1,0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Q) then mv = mv - Vector3.new(0,1,0) end
+        local speed = _G_Config.Movement.FreecamSpeed * 40
+        freecamCF = freecamCF:Lerp(freecamCF + (mv * speed * dt), 0.35)
+        local smooth = math.clamp(_G_Config.Movement.FreecamSmoothness or 0.25, 0.05, 0.5)
+        local targetCF = CFrame.new(freecamCF.Position) * rotCF
+        Camera.CameraType = Enum.CameraType.Custom
+        Camera.CameraSubject = nil
+        Camera.CFrame = Camera.CFrame:Lerp(targetCF, smooth)
+    else
+        freecamActiveLast = false
+        lastFreecamMousePos = nil
+        if freecamWasActiveLastFrame then
+            Camera.CameraType = rotationCache.cameraType
+            Camera.CameraSubject = rotationCache.cameraSubject
+            UserInputService.MouseBehavior = rotationCache.mouseBehavior
+            UserInputService.MouseIconEnabled = rotationCache.mouseIconEnabled
+            if rotationCache.shiftLockActive then UserGameSettings.RotationType = Enum.RotationType.CameraRelative end
+            AxiomHardReset()
+            task.defer(function()
+                UserInputService.MouseBehavior = rotationCache.mouseBehavior
+                UserInputService.MouseIconEnabled = rotationCache.mouseIconEnabled
+            end)
+        end
+        freecamCF = Camera.CFrame
+    end
+    freecamWasActiveLastFrame = freecamActiveLast
+
+    local tar = nil
+    if _G_Config.Aimbot.Enabled then
+        tar = GetClosestTarget()
+    end
+    if _G_Config.Aimbot.Enabled and _G_Config.Aimbot.Active and tar then
+        if _G_Config.Aimbot.VisualBT then
+            aimbotBTBox.Visible = true
+            aimbotBTBox.Color3 = getUIPresetAccent(_G_Config.Misc.UIPreset) or Color3.fromRGB(200, 120, 255)
+            aimbotBTBox.Adornee = tar
+            aimbotBTBox.Size = tar.Size
+        else
+            aimbotBTBox.Visible = false
+        end
+        if _G_Config.Aimbot.Method == "Camera" and Camera.CameraType ~= Enum.CameraType.Scriptable then
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, tar.Position), 1/_G_Config.Aimbot.Smoothness)
+        elseif mousemoverel then
+            local tp = Camera:WorldToViewportPoint(tar.Position)
+            local mp = UserInputService:GetMouseLocation()
+            pcall(function()
+                mousemoverel((tp.X - mp.X)/_G_Config.Aimbot.Smoothness, (tp.Y - mp.Y)/_G_Config.Aimbot.Smoothness)
+            end)
+        end
+    end
+    if not (_G_Config.Aimbot.Enabled and _G_Config.Aimbot.Active and _G_Config.Aimbot.VisualBT and tar) then
+        aimbotBTBox.Visible = false
+    end
+
+    if _G_Config.Aimbot.Enabled and _G_Config.Aimbot.SnapLines and _G_Config.Aimbot.FOVCircle and tar then
+        local screenPos = Camera:WorldToViewportPoint(tar.Position)
+        local mp = mousePos
+        local dist = (Vector2.new(screenPos.X, screenPos.Y) - mp).Magnitude
+        if screenPos.Z > 0 and dist <= fovRadius then
+            snapLine.Visible = true
+            snapLine.From = mp
+            snapLine.To = Vector2.new(screenPos.X, screenPos.Y)
+            snapLine.Color = _G_Config.Aimbot.SnapLineColor
+            snapLine.Thickness = math.clamp(_G_Config.Aimbot.SnapLineThickness, 1, 4)
+        else
+            snapLine.Visible = false
+        end
+    else
+        snapLine.Visible = false
+    end
+
+    if _G_Config.Aimbot.TargetHUD and _G_Config.Aimbot.FOVCircle and tar then
+        local plr = Players:GetPlayerFromCharacter(tar.Parent)
+        local screenPos = Camera:WorldToViewportPoint(tar.Position)
+        local mp = mousePos
+        local dist = (Vector2.new(screenPos.X, screenPos.Y) - mp).Magnitude
+        if plr and screenPos.Z > 0 and dist <= fovRadius then
+            ensureTargetHud()
+            local isDark = UIState.CascadeTheme == "Dark"
+            local accent = getUIPresetAccent(_G_Config.Misc.UIPreset)
+            if TargetHud.Frame then
+                TargetHud.Frame.BackgroundColor3 = isDark and Color3.fromRGB(12, 12, 12) or Color3.fromRGB(235, 235, 235)
+                TargetHud.Frame.BackgroundTransparency = 0.1
+            end
+            if TargetHud.Title then
+                TargetHud.Title.TextColor3 = accent or (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 20, 20))
+                TargetHud.Title.Text = getSpoofedName(plr)
+            end
+            if TargetHud.Body then
+                local hum = tar.Parent and tar.Parent:FindFirstChildOfClass("Humanoid")
+                local hrp = tar.Parent and tar.Parent:FindFirstChild("HumanoidRootPart")
+                local dist = hrp and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and (LocalPlayer.Character.HumanoidRootPart.Position - hrp.Position).Magnitude or 0
+                local tool = tar.Parent and tar.Parent:FindFirstChildOfClass("Tool")
+                TargetHud.Body.TextColor3 = isDark and Color3.fromRGB(220, 220, 220) or Color3.fromRGB(40, 40, 40)
+                TargetHud.Body.Text = string.format("HP: %d | Dist: %dm | Tool: %s", hum and math.floor(hum.Health) or 0, math.floor(dist), tool and tool.Name or "None")
+            end
+            if TargetHud.Avatar and TargetHud.LastUserId ~= plr.UserId then
+                TargetHud.LastUserId = plr.UserId
+                pcall(function()
+                    local thumb = Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+                    TargetHud.Avatar.Image = thumb
+                end)
+            end
+        else
+            if TargetHud.Gui then
+                TargetHud.Gui:Destroy()
+                TargetHud.Gui = nil
+                TargetHud.Frame = nil
+                TargetHud.Title = nil
+                TargetHud.Body = nil
+                TargetHud.Avatar = nil
+                TargetHud.LastUserId = 0
+            end
+        end
+    else
+        if TargetHud.Gui then
+            TargetHud.Gui:Destroy()
+            TargetHud.Gui = nil
+            TargetHud.Frame = nil
+            TargetHud.Title = nil
+            TargetHud.Body = nil
+            TargetHud.Avatar = nil
+            TargetHud.LastUserId = 0
+        end
+    end
+
+    updateESP()
+
+    ensureWatermark()
+    Watermark.Accum = Watermark.Accum + dt
+    Watermark.Frames = Watermark.Frames + 1
+    if Watermark.Accum >= 0.5 then
+        Watermark.Fps = Watermark.Frames / Watermark.Accum
+        Watermark.Ping = getPingMs()
+        Watermark.Accum = 0
+        Watermark.Frames = 0
+        local pos = _G_Config.Misc.WatermarkPosition or "TopLeft"
+        local isDark = UIState.CascadeTheme == "Dark"
+        local accent = getUIPresetAccent(_G_Config.Misc.UIPreset)
+        if Watermark.Frame then
+            if pos == "TopRight" then Watermark.Frame.AnchorPoint = Vector2.new(1, 0) Watermark.Frame.Position = UDim2.new(1, -16, 0, 16)
+            elseif pos == "BottomLeft" then Watermark.Frame.AnchorPoint = Vector2.new(0, 1) Watermark.Frame.Position = UDim2.new(0, 16, 1, -16)
+            elseif pos == "BottomRight" then Watermark.Frame.AnchorPoint = Vector2.new(1, 1) Watermark.Frame.Position = UDim2.new(1, -16, 1, -16)
+            else Watermark.Frame.AnchorPoint = Vector2.new(0, 0) Watermark.Frame.Position = UDim2.new(0, 16, 0, 16) end
+            Watermark.Frame.BackgroundColor3 = isDark and Color3.fromRGB(12, 12, 12) or Color3.fromRGB(235, 235, 235)
+            Watermark.Frame.BackgroundTransparency = 0.1
+        end
+        if Watermark.Title then Watermark.Title.TextColor3 = accent or (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 20, 20)) end
+        if Watermark.Body then
+            Watermark.Body.TextColor3 = isDark and Color3.fromRGB(220, 220, 220) or Color3.fromRGB(40, 40, 40)
+            Watermark.Body.Text = string.format("User: %s | FPS: %d | Ping: %dms", tostring(getSpoofedName(LocalPlayer)), math.floor(Watermark.Fps + 0.5), math.floor(Watermark.Ping + 0.5))
+        end
+    end
+
+    spyRefreshAccum += dt
+    if spyRefreshAccum >= 2 then
+        spyRefreshAccum = 0
+        if SpyState.TargetName then
+            local p = Players:FindFirstChild(SpyState.TargetName)
+            if not p then
+                SpyState.TargetName = nil
+            end
+        end
+    end
+
+    if SpyState.Spectating then
+        local p = SpyState.TargetName and Players:FindFirstChild(SpyState.TargetName)
+        local char = p and p.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            if not SpyState.PrevCameraType then
+                SpyState.PrevCameraType = Camera.CameraType
+                SpyState.PrevCameraSubject = Camera.CameraSubject
+            end
+            Camera.CameraType = Enum.CameraType.Custom
+            Camera.CameraSubject = hum
+        else
+            SpyState.Spectating = false
+        end
+    else
+        if SpyState.PrevCameraType then
+            Camera.CameraType = SpyState.PrevCameraType
+            Camera.CameraSubject = SpyState.PrevCameraSubject
+            SpyState.PrevCameraType = nil
+            SpyState.PrevCameraSubject = nil
+        end
+    end
+end))
+
+AxiomTrackConnection(RunService.PreRender:Connect(function()
+    if _G_Config.Movement.FreecamEnabled and _G_Config.Movement.FreecamActive and _G_Config.Movement.FreecamFreeCursor ~= false then
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+        UserInputService.MouseIconEnabled = true
+    end
+end))
+
+AxiomTrackConnection(RunService.Heartbeat:Connect(function(dt)
+    local succ, L_Serv = pcall(function() return game:GetService("Lighting") end)
+    if succ and L_Serv then
+        if _G_Config.Misc.AmbientEnabled then L_Serv.Ambient = _G_Config.Misc.AmbientColor L_Serv.OutdoorAmbient = _G_Config.Misc.AmbientColor end
+        if _G_Config.Misc.FullBright then L_Serv.Brightness, L_Serv.ClockTime, L_Serv.GlobalShadows = 2, 14, false end
+            end
+
+    if _G_Config.Misc.StreamerMode then
+        streamerAccum += dt
+        coreGuiAccum += dt
+        if coreGuiAccum >= 0.5 then
+            coreGuiAccum = 0
+            coreGuiCache = {}
+            pcall(function()
+                for _, obj in ipairs(game:GetService("CoreGui"):GetDescendants()) do
+                    if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+                        if typeof(obj.Text) == "string" and #obj.Text > 0 then
+                            table.insert(coreGuiCache, obj)
+                        end
+                    end
+                end
+            end)
+        end
+        if streamerAccum >= 0.05 then
+            streamerAccum = 0
+            local spoofMap = buildSpoofMap()
+            for _, p in ipairs(Players:GetPlayers()) do
+                applySpoofToPlayer(p)
+            end
+            for _, obj in ipairs(coreGuiCache) do
+                local t = obj.Text
+                if typeof(t) == "string" and #t > 0 then
+                    for original, replacement in pairs(spoofMap) do
+                        local pattern = escapePattern(original)
+                        t = t:gsub(pattern, replacement)
+                    end
+                    obj.Text = t
+                end
+            end
+        end
+    end
+
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local flyOn = _G_Config.Movement.FlyEnabled and _G_Config.Movement.FlyActive
+    local speedOn = _G_Config.Movement.SpeedEnabled and _G_Config.Movement.SpeedActive
+    local anyMovementOn = (flyOn or speedOn or _G_Config.Movement.Noclip or _G_Config.Movement.Bhop or _G_Config.Movement.TPWalk or _G_Config.Movement.Spinbot)
+    if char and hrp and hum and (anyMovementOn or noclipWasOn) then
+        if flyOn then
+            local flyDir = Vector3.new(0, 0, 0)
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then flyDir = flyDir + Camera.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then flyDir = flyDir - Camera.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then flyDir = flyDir - Camera.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then flyDir = flyDir + Camera.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.E) then flyDir = flyDir + Vector3.new(0,1,0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Q) then flyDir = flyDir - Vector3.new(0,1,0) end
+            if flyDir.Magnitude > 0 then flyDir = flyDir.Unit end
+            local flySpeed = math.clamp(tonumber(_G_Config.Movement.FlySpeed) or 50, 10, 500)
+            if _G_Config.Movement.FlyMethod == "Velocity" then
+                local bv = hrp:FindFirstChild("Axiom_Fly") or Instance.new("BodyVelocity", hrp)
+                bv.Name = "Axiom_Fly"
+                bv.MaxForce = Vector3.new(1, 1, 1) * math.huge
+                bv.Velocity = flyDir * flySpeed
+            else
+                hrp.CFrame = hrp.CFrame + (flyDir * (flySpeed / 15))
+            end
+        else
+            local bf = hrp:FindFirstChild("Axiom_Fly")
+            if bf then
+                bf:Destroy()
+                hrp.AssemblyLinearVelocity = Vector3.zero
+                hrp.AssemblyAngularVelocity = Vector3.zero
+            end
+        end
+
+        if speedOn then
+            if _G_Config.Movement.SpeedMethod == "CFrame" then
+                local speedVal = math.clamp(tonumber(_G_Config.Movement.SpeedValue) or 20, 1, 200)
+                pcall(function() char:TranslateBy(hum.MoveDirection * speedVal * dt * 2) end)
+            else
+                local bv = hrp:FindFirstChild("Axiom_Speed") or Instance.new("BodyVelocity", hrp)
+                local speedVal = math.clamp(tonumber(_G_Config.Movement.SpeedValue) or 20, 1, 200)
+                bv.Name = "Axiom_Speed"
+                bv.MaxForce = Vector3.new(math.huge, 0, math.huge)
+                bv.Velocity = hum.MoveDirection * speedVal
+            end
+        else
+            local bs = hrp:FindFirstChild("Axiom_Speed")
+            if bs then
+                bs:Destroy()
+                local v = hrp.AssemblyLinearVelocity
+                hrp.AssemblyLinearVelocity = Vector3.new(0, v.Y, 0)
+            end
+        end
+
+        if _G_Config.Movement.Bhop and hum.FloorMaterial ~= Enum.Material.Air then
+            hum:ChangeState("Jumping")
+        end
+        if _G_Config.Movement.TPWalk and hum.MoveDirection.Magnitude > 0 then
+            local tpRate = math.clamp(tonumber(_G_Config.Movement.TPRate) or 0.05, 0.01, 1)
+            local tpStep = math.clamp(tonumber(_G_Config.Movement.TPStep) or 3, 1, 10)
+            tpWalkAccum += dt
+            if tpWalkAccum >= tpRate then
+                hrp.CFrame = hrp.CFrame + (hum.MoveDirection * tpStep)
+                tpWalkAccum = 0
+            end
+        else
+            tpWalkAccum = 0
+        end
+        if _G_Config.Movement.Spinbot then
+            if spinAutoCache == nil then
+                spinAutoCache = hum.AutoRotate
+            end
+            hum.AutoRotate = false
+            local spinSpeed = math.clamp(tonumber(_G_Config.Movement.SpinSpeed) or 360, 0, 720)
+            hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(spinSpeed) * dt, 0)
+        else
+            if spinAutoCache ~= nil then
+                hum.AutoRotate = spinAutoCache
+                spinAutoCache = nil
+            end
+        end
+        if _G_Config.Movement.Noclip then
+            noclipWasOn = true
+            for _, d in ipairs(char:GetDescendants()) do if d:IsA("BasePart") then d.CanCollide = false end end
+        elseif noclipWasOn then
+            for _, d in ipairs(char:GetDescendants()) do if d:IsA("BasePart") then d.CanCollide = true end end
+            noclipWasOn = false
+        end
+    end
+
+    local hb = _G_Config.Hitbox
+    if hb.Enabled then
+        local changed = (HitboxSettingsCache.Enabled ~= hb.Enabled)
+            or (HitboxSettingsCache.ExpandSize ~= hb.ExpandSize)
+            or (HitboxSettingsCache.Transparency ~= hb.Transparency)
+            or (HitboxSettingsCache.Color ~= hb.Color)
+            or (HitboxSettingsCache.OutlineColor ~= hb.OutlineColor)
+            or (HitboxSettingsCache.ShowOutline ~= hb.ShowOutline)
+            or (HitboxSettingsCache.Head ~= hb.Head)
+            or (HitboxSettingsCache.Torso ~= hb.Torso)
+        if changed then
+            HitboxSettingsCache.Enabled = hb.Enabled
+            HitboxSettingsCache.ExpandSize = hb.ExpandSize
+            HitboxSettingsCache.Transparency = hb.Transparency
+            HitboxSettingsCache.Color = hb.Color
+            HitboxSettingsCache.OutlineColor = hb.OutlineColor
+            HitboxSettingsCache.ShowOutline = hb.ShowOutline
+            HitboxSettingsCache.Head = hb.Head
+            HitboxSettingsCache.Torso = hb.Torso
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer then
+                    updateHitboxForPlayer(p)
+                end
+            end
+        end
+    elseif HitboxSettingsCache.Enabled then
+        HitboxSettingsCache.Enabled = false
+        resetAllHitboxes()
+    end
+end))
+
+AxiomTrackConnection(UserInputService.JumpRequest:Connect(function()
+    if _G_Config.Movement.InfJump and LocalPlayer.Character then
+        local h = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if h then h:ChangeState("Jumping") end
+    end
+end))
+
+if isMM2 then
+    local cfg = _G_Config.MM2
+    if not cfg then
+        _G_Config.MM2 = (function()
+            local d = {}
+            for k, v in pairs(defaultConfig.MM2 or {}) do d[k] = v end
+            return d
+        end)()
+        cfg = _G_Config.MM2
+    end
+    local function getRoleColor(role)
+        if role == "Murderer" then return cfg.MurdererESPColor or Color3.fromRGB(255, 0, 0) end
+        if role == "Sheriff" then return cfg.SheriffESPColor or Color3.fromRGB(0, 100, 255) end
+        return cfg.InnocentESPColor or Color3.fromRGB(200, 200, 200)
+    end
+    local gunEspDrawings = {}
+    local roleEspDrawings = {}
+    local function clearGunESP()
+        for _, d in ipairs(gunEspDrawings) do pcall(function() d:Remove() end) end
+        table.clear(gunEspDrawings)
+    end
+    local function clearRoleESP()
+        for _, d in ipairs(roleEspDrawings) do pcall(function() d:Remove() end) end
+        table.clear(roleEspDrawings)
+    end
+    local espFrameSkip = 0
+    local function updateGunESP()
+        cfg = _G_Config.MM2
+        if not cfg or not cfg.GunESP then clearGunESP() return end
+        local gun = _G.getDroppedGun and _G.getDroppedGun() or nil
+        if not gun then clearGunESP() return end
+        local pos, onScreen = Camera:WorldToViewportPoint(gun.Position)
+        if not onScreen then clearGunESP() return end
+        local color = cfg.GunESPColor or Color3.fromRGB(0, 255, 0)
+        local dist = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and (gun.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude) or 0
+        if #gunEspDrawings == 0 then
+            local label = Drawing.new("Text")
+            label.Visible = true
+            label.Center = true
+            label.Outline = true
+            label.Size = 14
+            table.insert(gunEspDrawings, label)
+        end
+        local d = gunEspDrawings[1]
+        d.Position = Vector2.new(pos.X, pos.Y)
+        d.Text = string.format("Gun [%.0f studs]", dist)
+        d.Color = Color3.new(color.R, color.G, color.B)
+        d.Visible = true
+    end
+    local function updateRoleESP(cachedMurderer, cachedSheriff)
+        clearRoleESP()
+        cfg = _G_Config.MM2
+        if not cfg or not (cfg.MurdererESP or cfg.SheriffESP or cfg.RoleESP) then return end
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p == LocalPlayer then continue end
+            local char = p.Character
+            if not char or not char:FindFirstChild("HumanoidRootPart") then continue end
+            local role = (cachedMurderer == p) and "Murderer" or (cachedSheriff == p) and "Sheriff" or "Innocent"
+            local show = (role == "Murderer" and cfg.MurdererESP) or (role == "Sheriff" and cfg.SheriffESP) or (role == "Innocent" and cfg.RoleESP)
+            if not show then continue end
+            local head = char:FindFirstChild("Head")
+            if not head then continue end
+            local pos, onScreen = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 1, 0))
+            if not onScreen then continue end
+            local label = Drawing.new("Text")
+            label.Visible = true
+            label.Center = true
+            label.Outline = true
+            label.Size = 12
+            label.Position = Vector2.new(pos.X, pos.Y)
+            label.Text = role
+            label.Color = getRoleColor(role)
+            table.insert(roleEspDrawings, label)
+        end
+    end
+    AxiomTrackConnection(RunService.RenderStepped:Connect(function()
+        espFrameSkip = espFrameSkip + 1
+        if espFrameSkip % 3 ~= 0 then return end
+        pcall(function()
+            if not _G_Config.MM2 then return end
+            local c = _G_Config.MM2
+            if c.GunESP then updateGunESP() end
+            if c.MurdererESP or c.SheriffESP or c.RoleESP then
+                local m = _G.getMurderer and _G.getMurderer()
+                local s = _G.getSheriff and _G.getSheriff()
+                updateRoleESP(m, s)
+            else
+                clearRoleESP()
+            end
+        end)
+    end))
+    local silentAimActive = false
+    local killAllActive = false
+    AxiomTrackConnection(UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        local c = _G_Config and _G_Config.MM2
+        if not c then return end
+        if c.SilentAimEnabled and input.KeyCode == c.SilentAimKey then
+            if c.SilentAimMode == "Toggle" then silentAimActive = not silentAimActive else silentAimActive = true end
+        end
+        if c.KillAllEnabled and input.KeyCode == c.KillAllKey then
+            if c.KillAllMode == "Toggle" then killAllActive = not killAllActive else killAllActive = true end
+        end
+    end))
+    AxiomTrackConnection(UserInputService.InputEnded:Connect(function(input)
+        local c = _G_Config and _G_Config.MM2
+        if not c then return end
+        if input.KeyCode == c.SilentAimKey and c.SilentAimMode == "Hold" then silentAimActive = false end
+        if input.KeyCode == c.KillAllKey and c.KillAllMode == "Hold" then killAllActive = false end
+    end))
+    local silentAimTarget = nil
+    local gunRemoteHooked = false
+    task.spawn(function()
+        for attempt = 1, 3 do
+            if gunRemoteHooked then break end
+            for _, child in ipairs(ReplicatedStorage:GetChildren()) do
+                if gunRemoteHooked then break end
+                if child:IsA("RemoteEvent") then
+                    local n = child.Name:lower()
+                    if (n:find("hit") or n:find("shoot") or n:find("gun")) and not n:find("knife") then
+                        local orig = child.FireServer
+                        child.FireServer = function(remote, ...)
+                            local args = {...}
+                            if _G_Config and _G_Config.MM2 and _G_Config.MM2.SilentAimEnabled and silentAimTarget and _G.getSheriff and _G.getSheriff() == LocalPlayer then
+                                local t = silentAimTarget
+                                if type(args[1]) == "Instance" and args[1]:IsA("BasePart") then
+                                    args[1] = t
+                                end
+                                return orig(remote, table.unpack(args))
+                            end
+                            return orig(remote, ...)
+                        end
+                        gunRemoteHooked = true
+                        break
+                    end
+                end
+            end
+            task.wait(attempt * 0.3)
+        end
+    end)
+    AxiomTrackConnection(RunService.Heartbeat:Connect(function()
+        pcall(function()
+            cfg = _G_Config.MM2
+            if not cfg or not cfg.SilentAimEnabled then return end
+            local active = (cfg.SilentAimMode == "Hold" and silentAimActive) or (cfg.SilentAimMode == "Toggle" and silentAimActive)
+            if not active then silentAimTarget = nil return end
+            if _G.getSheriff and _G.getSheriff() ~= LocalPlayer then silentAimTarget = nil return end
+            local murderer = _G.getMurderer and _G.getMurderer()
+            if not murderer or not murderer.Character then silentAimTarget = nil return end
+            local head = murderer.Character:FindFirstChild("Head")
+            if head then silentAimTarget = head end
+        end)
+    end))
+    local knifeRemote = nil
+    task.spawn(function()
+        for attempt = 1, 3 do
+            if knifeRemote then break end
+            for _, child in ipairs(ReplicatedStorage:GetChildren()) do
+                if child:IsA("RemoteEvent") then
+                    local n = child.Name:lower()
+                    if n:find("knife") or n:find("stab") or n:find("kill") then
+                        knifeRemote = child
+                        break
+                    end
+                end
+            end
+            task.wait(attempt * 0.3)
+        end
+    end)
+    local lastKillAllTime = 0
+    AxiomTrackConnection(RunService.Heartbeat:Connect(function()
+        pcall(function()
+            cfg = _G_Config.MM2
+            if not cfg or not cfg.KillAllEnabled then return end
+            local active = (cfg.KillAllMode == "Hold" and killAllActive) or (cfg.KillAllMode == "Toggle" and killAllActive)
+            if not active then return end
+            if _G.getMurderer and _G.getMurderer() ~= LocalPlayer then return end
+            if tick() - lastKillAllTime < 0.25 then return end
+            lastKillAllTime = tick()
+            if knifeRemote then
+                task.spawn(function()
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+                            pcall(function() knifeRemote:FireServer(p) end)
+                            task.wait(0.08)
+                        end
+                    end
+                end)
+            end
+        end)
+    end))
+    AxiomTrackConnection(RunService.Heartbeat:Connect(function()
+        pcall(function()
+            cfg = _G_Config.MM2
+            if not cfg or not cfg.AutoGunGrab then return end
+            local gun = _G.getDroppedGun and _G.getDroppedGun()
+            if not gun then return end
+            local char = LocalPlayer.Character
+            if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+            local dist = (gun.Position - char.HumanoidRootPart.Position).Magnitude
+            if dist < 15 then
+                char.HumanoidRootPart.CFrame = gun.CFrame + Vector3.new(0, 2, 0)
+            end
+        end)
+    end))
+    local coinFarmAccum = 0
+    local coinCache, coinCacheTime = {}, 0
+    AxiomTrackConnection(RunService.Heartbeat:Connect(function(dt)
+        pcall(function()
+            cfg = _G_Config.MM2
+            if not cfg or not cfg.AutoFarmCoins then return end
+            local char = LocalPlayer.Character
+            if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+            coinFarmAccum = coinFarmAccum + dt
+            if coinFarmAccum < 0.4 then return end
+            coinFarmAccum = 0
+            local t = tick()
+            if t - coinCacheTime > 1 then
+                table.clear(coinCache)
+                for _, child in ipairs(Workspace:GetChildren()) do
+                    if child:IsA("BasePart") then
+                        local n = child.Name:lower()
+                        if n:find("coin") or n:find("money") then
+                            table.insert(coinCache, child)
+                        end
+                    end
+                end
+                coinCacheTime = t
+            end
+            local pos = char.HumanoidRootPart.Position
+            for _, obj in ipairs(coinCache) do
+                if obj and obj.Parent then
+                    local dist = (obj.Position - pos).Magnitude
+                    if dist < 20 then
+                        char.HumanoidRootPart.CFrame = obj.CFrame + Vector3.new(0, 0, 2)
+                        return
+                    end
+                end
+            end
+        end)
+    end))
+    AxiomNotify("MM2", "MM2 features loaded.", _G_Config)
+end
+
+AxiomSoundHandler("tf2 menu", 1)
+AxiomNotify("Axiom.win", "Loaded.", _G_Config)
