@@ -473,13 +473,13 @@
 
   <nav class="nav" aria-label="Main">
     <a href="#" class="nav-logo">Axiom.win</a>
-    <a href="https://github.com/itssor/axiom.winv2/tree/main/axiom.win%20-%20roblox" target="_blank" rel="noopener" class="nav-link">GitHub</a>
+    <a href="https://github.com/itssor/axiom.winv2/tree/main/scripts" target="_blank" rel="noopener" class="nav-link">GitHub</a>
   </nav>
 
   <header class="hero">
     <p class="hero-tag">Open source on GitHub</p>
     <h1 class="hero-title">Axiom.win</h1>
-    <p class="hero-desc">One loader. Paste into your executor and run. Supports Murder Mystery 2 and a universal build — all free, no key.</p>
+    <p class="hero-desc">One loader — paste it into your executor and you're good. MM2 gets its own build, everything else uses the universal script. Free, no key, no signup.</p>
     <div class="hero-cta">
       <button type="button" class="copy-btn" id="copyBtnHero" aria-label="Copy loader">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -496,7 +496,7 @@
 
   <section class="section" id="install" aria-labelledby="install-title">
     <h2 class="section-title" id="install-title">Install in seconds</h2>
-    <p class="section-desc">Copy and paste this code into your Roblox executor (Delta, Synapse, or any compatible executor).</p>
+    <p class="section-desc">Copy the code below into your executor — Delta, Synapse, Wave, whatever you use. Paste, run, done.</p>
     <div class="install-block">
       <pre class="install-code" id="loaderCode"></pre>
       <div class="install-cta">
@@ -507,19 +507,19 @@
 
   <section class="section" id="why" aria-labelledby="why-title">
     <h2 class="section-title" id="why-title">Why Axiom?</h2>
-    <p class="section-desc">One loader, open source, no signup.</p>
+    <p class="section-desc">One loader, open source, no signup. That's it.</p>
     <div class="why-grid">
       <div class="why-card">
-        <h3>Single loader</h3>
-        <p>One line of code. The loader fetches the right script from GitHub based on the game you're in.</p>
+        <h3>One loader</h3>
+        <p>Same line everywhere. It checks which game you're in and pulls the right script from GitHub — MM2 or universal.</p>
       </div>
       <div class="why-card">
         <h3>Open source</h3>
-        <p>Scripts and loader live on GitHub. No obfuscation, no key system — just paste and run.</p>
+        <p>Everything's on GitHub. No obfuscation, no key system. Paste and run.</p>
       </div>
       <div class="why-card">
-        <h3>Supported games</h3>
-        <p>Murder Mystery 2 gets a dedicated build; everything else uses the universal script.</p>
+        <h3>MM2 + universal</h3>
+        <p>Murder Mystery 2 has a dedicated build; every other game uses the universal script. Loader picks for you.</p>
       </div>
     </div>
   </section>
@@ -527,7 +527,7 @@
   <section class="section" id="free">
     <div class="free-cta">
       <h2>Free — no key, no signup</h2>
-      <p>Copy the loader above and run it in your executor. No ads, no waiting.</p>
+      <p>Grab the loader above, run it in your executor. No ads, no wait, no account.</p>
       <button type="button" class="copy-btn" id="copyBtnFree">Copy loader</button>
     </div>
   </section>
@@ -557,12 +557,12 @@
 
   <section class="games-section" id="games" aria-labelledby="games-title">
     <h2 class="games-head" id="games-title">Supported games</h2>
-    <p class="games-sub">Games we load scripts for.</p>
+    <p class="games-sub">Scripts we load for these.</p>
     <div class="games-grid" id="gamesGrid"></div>
   </section>
 
   <footer class="footer">
-    <a href="https://github.com/itssor/axiom.winv2/tree/main/axiom.win%20-%20roblox" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://github.com/itssor/axiom.winv2/tree/main/scripts" target="_blank" rel="noopener">GitHub</a>
   </footer>
 
   <div class="toast" id="toast" role="status">Copied</div>
@@ -570,7 +570,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script>
     (function() {
-      var GITHUB_RAW = "https://raw.githubusercontent.com/itssor/axiom.winv2/main/axiom.win%20-%20roblox/core.lua";
+      var GITHUB_RAW = "https://raw.githubusercontent.com/itssor/axiom.winv2/main/scripts/core.lua";
       var loaderCode = "loadstring(game:HttpGet(\"" + GITHUB_RAW + "\"))()";
 
       document.getElementById("loaderCode").textContent = loaderCode;
