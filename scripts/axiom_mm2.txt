@@ -2223,6 +2223,15 @@ AxiomTrackConnection(RunService.RenderStepped:Connect(function(dt)
     elseif not _G_Config.Movement.FreecamEnabled then
         _G_Config.Movement.FreecamActive = false
     end
+    if _G_Config.Movement.SpeedMode == "Hold" and _G_Config.Movement.SpeedActive and not UserInputService:IsKeyDown(_G_Config.Movement.SpeedKey) then
+        _G_Config.Movement.SpeedActive = false
+    end
+    if _G_Config.Movement.FlyMode == "Hold" and _G_Config.Movement.FlyActive and not UserInputService:IsKeyDown(_G_Config.Movement.FlyKey) then
+        _G_Config.Movement.FlyActive = false
+    end
+    if _G_Config.Misc.ZoomMode == "Hold" and _G_Config.Misc.ZoomActive and not UserInputService:IsKeyDown(_G_Config.Misc.ZoomKey) then
+        _G_Config.Misc.ZoomActive = false
+    end
     if _G_Config.Misc.ZoomMode == "Always On" then
         _G_Config.Misc.ZoomActive = _G_Config.Misc.ZoomEnabled
     elseif not _G_Config.Misc.ZoomEnabled then
@@ -2537,7 +2546,7 @@ AxiomTrackConnection(RunService.Heartbeat:Connect(function(dt)
     local flyOn = _G_Config.Movement.FlyEnabled and _G_Config.Movement.FlyActive
     local speedOn = _G_Config.Movement.SpeedEnabled and _G_Config.Movement.SpeedActive
     local anyMovementOn = (flyOn or speedOn or _G_Config.Movement.Noclip or _G_Config.Movement.Bhop or _G_Config.Movement.TPWalk or _G_Config.Movement.Spinbot)
-    if char and hrp and hum and (anyMovementOn or noclipWasOn) then
+    if char and hrp and hum then
         if flyOn then
             local flyDir = Vector3.new(0, 0, 0)
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then flyDir = flyDir + Camera.CFrame.LookVector end
@@ -2584,7 +2593,9 @@ AxiomTrackConnection(RunService.Heartbeat:Connect(function(dt)
                 hrp.AssemblyLinearVelocity = Vector3.new(0, v.Y, 0)
             end
         end
+    end
 
+    if char and hrp and hum and (anyMovementOn or noclipWasOn) then
         if _G_Config.Movement.Bhop and hum.FloorMaterial ~= Enum.Material.Air then
             hum:ChangeState("Jumping")
         end
@@ -2803,6 +2814,7 @@ if isMM2 then
         pcall(function()
             cfg = _G_Config.MM2
             if not cfg or not cfg.SilentAimEnabled then return end
+            if cfg.SilentAimMode == "Hold" and silentAimActive and not UserInputService:IsKeyDown(cfg.SilentAimKey) then silentAimActive = false end
             local active = (cfg.SilentAimMode == "Hold" and silentAimActive) or (cfg.SilentAimMode == "Toggle" and silentAimActive)
             if not active then silentAimTarget = nil return end
             if _G.getSheriff and _G.getSheriff() ~= LocalPlayer then silentAimTarget = nil return end
@@ -2833,6 +2845,7 @@ if isMM2 then
         pcall(function()
             cfg = _G_Config.MM2
             if not cfg or not cfg.KillAllEnabled then return end
+            if cfg.KillAllMode == "Hold" and killAllActive and not UserInputService:IsKeyDown(cfg.KillAllKey) then killAllActive = false end
             local active = (cfg.KillAllMode == "Hold" and killAllActive) or (cfg.KillAllMode == "Toggle" and killAllActive)
             if not active then return end
             if _G.getMurderer and _G.getMurderer() ~= LocalPlayer then return end

@@ -2083,6 +2083,9 @@ AxiomTrackConnection(RunService.RenderStepped:Connect(function(dt)
     if _G_Config.Movement.FlyMode == "Hold" and _G_Config.Movement.FlyActive and not UserInputService:IsKeyDown(_G_Config.Movement.FlyKey) then
         _G_Config.Movement.FlyActive = false
     end
+    if _G_Config.Misc.ZoomMode == "Hold" and _G_Config.Misc.ZoomActive and not UserInputService:IsKeyDown(_G_Config.Misc.ZoomKey) then
+        _G_Config.Misc.ZoomActive = false
+    end
     if _G_Config.Misc.ZoomMode == "Always On" then
         _G_Config.Misc.ZoomActive = _G_Config.Misc.ZoomEnabled
     elseif not _G_Config.Misc.ZoomEnabled then

@@ -6,6 +6,7 @@ import urllib.error
 import sys
 import os
 import re
+from urllib.parse import urlparse
 
 USER_AGENT = "Velocity/1"
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "grabbed scripts")
@@ -44,7 +45,8 @@ def fetch_one(url):
     print(text)
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    host = url.split("/")[2] if "/" in url[8:] else "out"
+    parsed = urlparse(url)
+    host = parsed.netloc or "out"
     safe_name = re.sub(r"[^\w\-\.]", "_", host)
     ext = ".html" if "html" in content_type else ".txt" if "text" in content_type else ".bin"
     path = os.path.join(OUTPUT_DIR, safe_name + ext)
