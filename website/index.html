@@ -18,8 +18,17 @@
       to { opacity: 1; }
     }
     @keyframes loaderPulse {
-      0%, 100% { opacity: 0.6; transform: scale(1); }
-      50% { opacity: 1; transform: scale(1.05); }
+      0%, 100% { opacity: 0.5; transform: scaleY(1); }
+      50% { opacity: 1; transform: scaleY(0.4); }
+    }
+    @keyframes loaderShimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    @keyframes loaderBar {
+      0% { width: 0; opacity: 0.8; }
+      50% { width: 70%; opacity: 1; }
+      100% { width: 100%; opacity: 0.8; }
     }
     @keyframes gradientShift {
       0%, 100% { background-position: 0% 50%; }
@@ -40,8 +49,8 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 24px;
-      transition: opacity 0.6s ease, visibility 0.6s ease;
+      gap: 32px;
+      transition: opacity 0.7s ease, visibility 0.7s ease;
       font-family: var(--axiom-font);
     }
     .page-loader.done {
@@ -49,23 +58,40 @@
       visibility: hidden;
       pointer-events: none;
     }
-    .page-loader-bar {
-      width: 120px;
-      height: 4px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 2px;
-      overflow: hidden;
+    .page-loader-logo {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, var(--axiom-accent), #b8a0ff, var(--axiom-accent));
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 2.5s ease infinite;
     }
-    .page-loader-bar-inner {
-      width: 40%;
+    .page-loader-bars {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      height: 24px;
+    }
+    .page-loader-bars span {
+      width: 6px;
       height: 100%;
       background: var(--axiom-accent);
-      border-radius: 2px;
-      animation: loaderPulse 1.2s ease-in-out infinite;
+      border-radius: 3px;
+      animation: loaderPulse 0.8s ease-in-out infinite;
     }
+    .page-loader-bars span:nth-child(1) { animation-delay: 0s; }
+    .page-loader-bars span:nth-child(2) { animation-delay: 0.15s; }
+    .page-loader-bars span:nth-child(3) { animation-delay: 0.3s; }
+    .page-loader-bars span:nth-child(4) { animation-delay: 0.45s; }
+    .page-loader-bars span:nth-child(5) { animation-delay: 0.6s; }
     .page-loader-text {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--axiom-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
 
     .nav {
@@ -211,16 +237,24 @@
       border-color: rgba(107, 140, 255, 0.2);
       box-shadow: 0 0 40px rgba(107, 140, 255, 0.08);
     }
-    .loader-code {
-      font-family: ui-monospace, monospace;
-      font-size: 13px;
-      color: var(--axiom-muted);
-      word-break: break-all;
+    .loader-code-wrap {
+      overflow-x: auto;
+      overflow-y: hidden;
       padding: 16px;
-      background: rgba(0, 0, 0, 0.3);
+      background: rgba(0, 0, 0, 0.35);
       border-radius: var(--axiom-radius);
       margin-bottom: 16px;
-      border: 1px solid rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      -webkit-overflow-scrolling: touch;
+    }
+    .loader-code {
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--axiom-muted);
+      white-space: pre;
+      min-width: min-content;
+      margin: 0;
     }
     .loader-cta { text-align: center; margin-top: 16px; }
 
@@ -229,12 +263,27 @@
       font-size: clamp(1.35rem, 3vw, 1.75rem);
       font-weight: 700;
       margin-bottom: 12px;
+      letter-spacing: -0.02em;
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .section-title.in-view {
+      opacity: 1;
+      transform: translateY(0);
     }
     .section-desc {
       color: var(--axiom-muted);
       font-size: 15px;
       line-height: 1.5;
       margin-bottom: 24px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.5s ease 0.08s, transform 0.5s ease 0.08s;
+    }
+    .section-desc.in-view {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .why-grid {
@@ -250,8 +299,17 @@
       border: 1px solid var(--axiom-border);
       border-radius: var(--axiom-radius-lg);
       padding: 24px 20px;
-      transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.45s ease, transform 0.45s ease, border-color 0.3s, box-shadow 0.3s;
     }
+    .why-card.in-view {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .why-card:nth-child(1) { transition-delay: 0s; }
+    .why-card:nth-child(2) { transition-delay: 0.08s; }
+    .why-card:nth-child(3) { transition-delay: 0.16s; }
     .why-card:hover {
       transform: translateY(-4px);
       border-color: rgba(107, 140, 255, 0.35);
@@ -273,7 +331,18 @@
     .faq-list { max-width: 640px; }
     .faq-item {
       border-bottom: 1px solid var(--axiom-border);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
     }
+    .faq-item.in-view {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .faq-item:nth-child(1) { transition-delay: 0s; }
+    .faq-item:nth-child(2) { transition-delay: 0.06s; }
+    .faq-item:nth-child(3) { transition-delay: 0.12s; }
+    .faq-item:nth-child(4) { transition-delay: 0.18s; }
     .faq-item summary {
       font-family: var(--axiom-font);
       font-size: 15px;
@@ -317,8 +386,20 @@
       border: 1px solid var(--axiom-border);
       border-radius: var(--axiom-radius-lg);
       overflow: hidden;
-      transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.4s ease, transform 0.4s ease, border-color 0.3s, box-shadow 0.3s;
     }
+    .game-card.in-view {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .game-card:nth-child(1) { transition-delay: 0s; }
+    .game-card:nth-child(2) { transition-delay: 0.05s; }
+    .game-card:nth-child(3) { transition-delay: 0.1s; }
+    .game-card:nth-child(4) { transition-delay: 0.15s; }
+    .game-card:nth-child(5) { transition-delay: 0.2s; }
+    .game-card:nth-child(n+6) { transition-delay: 0.25s; }
     .game-card:hover {
       transform: translateY(-6px) scale(1.02);
       border-color: rgba(107, 140, 255, 0.4);
@@ -384,6 +465,28 @@
       transform: translateX(-50%) translateY(0);
     }
 
+    .loader-block {
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.5s ease 0.1s, transform 0.5s ease 0.1s, box-shadow 0.3s, border-color 0.3s;
+    }
+    .loader-block.in-view {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .hero-title {
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .hero-title.in-view { opacity: 1; transform: translateY(0); }
+    .hero-desc {
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.5s ease 0.06s, transform 0.5s ease 0.06s;
+    }
+    .hero-desc.in-view { opacity: 1; transform: translateY(0); }
+
     .bg-mesh {
       position: fixed;
       inset: 0;
@@ -408,14 +511,26 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .page-loader-bar-inner { animation: none; }
-      .hero-title { animation: none; }
+      .page-loader-bars span { animation: none; }
+      .page-loader-logo { animation: none; }
+      .hero-title, .hero-desc, .section-title, .section-desc,
+      .why-card, .faq-item, .game-card, .loader-block {
+        opacity: 1;
+        transform: none;
+        transition: none;
+      }
+      .hero-title.in-view, .hero-desc.in-view, .section-title.in-view,
+      .section-desc.in-view, .why-card.in-view, .faq-item.in-view,
+      .game-card.in-view, .loader-block.in-view { opacity: 1; transform: none; }
     }
   </style>
 </head>
 <body>
   <div class="page-loader" id="pageLoader" aria-hidden="true">
-    <div class="page-loader-bar"><div class="page-loader-bar-inner"></div></div>
+    <div class="page-loader-logo">Axiom</div>
+    <div class="page-loader-bars">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
     <span class="page-loader-text">Loading</span>
   </div>
 
@@ -441,7 +556,9 @@
       <h1 class="hero-title">Axiom.win</h1>
       <p class="hero-desc">One loader. Copy the code below into your executor and run it. We support multiple games — the loader loads the right script for the game you're in. Free, no key, no signup.</p>
       <div class="loader-block">
-        <pre class="loader-code" id="loaderCode"></pre>
+        <div class="loader-code-wrap">
+          <pre class="loader-code" id="loaderCode"></pre>
+        </div>
         <div class="loader-cta">
           <button type="button" class="copy-btn" id="copyBtnLoader" aria-label="Copy loader">Copy loader</button>
         </div>
@@ -493,7 +610,7 @@
 
     <section class="tab-panel" id="panel-games" role="tabpanel" aria-labelledby="tab-games" hidden>
       <h2 class="section-title">Supported games</h2>
-      <p class="section-desc">We support multiple games. Scripts are built for several popular titles plus a universal build for everything else.</p>
+      <p class="section-desc">We support multiple games with dedicated builds and thumbnails. Below: supported titles and a universal build for everything else.</p>
       <div class="games-grid" id="gamesGrid"></div>
     </section>
   </main>
@@ -577,15 +694,15 @@
           fromPanel.style.left = "0";
           fromPanel.style.right = "0";
           fromPanel.style.top = "0";
-          gsap.set(toPanel, { xPercent: dir * 100, opacity: 0 });
+          gsap.set(toPanel, { scale: 1.08, opacity: 0, filter: "blur(10px)" });
           toPanel.style.position = "absolute";
           toPanel.style.left = "0";
           toPanel.style.right = "0";
           toPanel.style.top = "0";
           toPanel.removeAttribute("hidden");
           var tl = gsap.timeline();
-          tl.to(fromPanel, { xPercent: -dir * 100, opacity: 0, duration: TAB_SWOOSH_DURATION, ease: "power2.inOut" }, 0);
-          tl.to(toPanel, { xPercent: 0, opacity: 1, duration: TAB_SWOOSH_DURATION, ease: "power2.inOut" }, 0);
+          tl.to(fromPanel, { scale: 0.96, opacity: 0, filter: "blur(8px)", duration: TAB_SWOOSH_DURATION, ease: "power2.in" }, 0);
+          tl.to(toPanel, { scale: 1, opacity: 1, filter: "blur(0px)", duration: TAB_SWOOSH_DURATION, ease: "power2.out" }, 0);
           tl.add(function() {
             fromPanel.classList.remove("active");
             fromPanel.setAttribute("hidden", "");
@@ -618,10 +735,24 @@
 
       var grid = document.getElementById("gamesGrid");
       var canFetch = (typeof location !== "undefined" && (location.protocol === "http:" || location.protocol === "https:"));
+      var MM2_PLACE_ID = 142823291;
       var fallbackGames = [
-        { placeId: 142823291, name: "Murder Mystery 2", thumbUrl: "https://via.placeholder.com/200/1a1a2e/6b8cff?text=MM2" },
+        { placeId: MM2_PLACE_ID, name: "Murder Mystery 2", thumbUrl: null },
         { placeId: "universal", name: "Universal", thumbUrl: "https://img.icons8.com/ios-filled/512/6b8cff/globe--v1.png" }
       ];
+
+      function fetchMm2Thumb(cb) {
+        if (!canFetch) return cb();
+        fetch("https://thumbnails.roblox.com/v1/places/gameicons?placeIds=" + MM2_PLACE_ID + "&size=512x512&format=Png&isCircular=false")
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data && data.data && data.data[0] && data.data[0].imageUrl) {
+              fallbackGames[0].thumbUrl = data.data[0].imageUrl;
+            }
+            cb();
+          })
+          .catch(cb);
+      }
 
       function renderGames(games) {
         if (!Array.isArray(games) || games.length === 0) games = fallbackGames;
@@ -629,25 +760,61 @@
         games.forEach(function(g, i) {
           var card = document.createElement("article");
           card.className = "game-card";
-          var thumb = g.thumbUrl || "https://via.placeholder.com/200/1a1a2e/6b8cff?text=" + encodeURIComponent(g.name || "?");
+          var thumb = g.thumbUrl || "https://via.placeholder.com/200/1a1a2e/6b8cff?text=" + encodeURIComponent((g.name || "?").slice(0, 4));
           card.innerHTML =
             "<img class=\"game-card-thumb\" src=\"" + thumb + "\" alt=\"\" loading=\"lazy\" width=\"200\" height=\"200\">" +
             "<div class=\"game-card-name\">" + (g.name || "Unknown") + "</div>";
           grid.appendChild(card);
         });
-        if (typeof gsap !== "undefined" && gsap.to) {
-          gsap.from(".game-card", { opacity: 0, y: 16, duration: 0.35, stagger: 0.05, ease: "power2.out" });
+        observeInView(grid.querySelectorAll(".game-card"));
+      }
+
+      function observeInView(els) {
+        if (!els || els.length === 0) return;
+        var io = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(function(entries) {
+          entries.forEach(function(e) {
+            if (e.isIntersecting) e.target.classList.add("in-view");
+          });
+        }, { rootMargin: "0px 0px -40px 0px", threshold: 0.1 }) : null;
+        if (io) {
+          for (var i = 0; i < els.length; i++) io.observe(els[i]);
+        } else {
+          for (var j = 0; j < els.length; j++) els[j].classList.add("in-view");
+        }
+      }
+
+      function setupScrollAnimations() {
+        var targets = document.querySelectorAll(".hero-title, .hero-desc, .section-title, .section-desc, .why-card, .faq-item, .loader-block");
+        var io = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(function(entries) {
+          entries.forEach(function(e) {
+            if (e.isIntersecting) e.target.classList.add("in-view");
+          });
+        }, { rootMargin: "0px 0px -50px 0px", threshold: 0.15 }) : null;
+        if (io) {
+          for (var i = 0; i < targets.length; i++) io.observe(targets[i]);
+        } else {
+          for (var j = 0; j < targets.length; j++) targets[j].classList.add("in-view");
         }
       }
 
       if (canFetch) {
         fetch("/api/games")
           .then(function(r) { return r.ok ? r.json() : []; })
-          .then(renderGames)
-          .catch(function() { renderGames(fallbackGames); });
+          .then(function(data) {
+            if (Array.isArray(data) && data.length > 0) {
+              renderGames(data);
+            } else {
+              fetchMm2Thumb(function() { renderGames(fallbackGames); });
+            }
+          })
+          .catch(function() {
+            fetchMm2Thumb(function() { renderGames(fallbackGames); });
+          });
       } else {
         renderGames(fallbackGames);
       }
+
+      setupScrollAnimations();
     })();
   </script>
 </body>
