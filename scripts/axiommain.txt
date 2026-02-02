@@ -170,6 +170,18 @@ local defaultConfig = {
         AxiomTextUseGradient = false,
         AxiomTextGradientColor = Color3.fromRGB(200, 200, 200)
     },
+    SilentAim = {
+        Enabled = false,
+        Active = false,
+        Method = "ClosestToCrosshair",
+        FOV = 120,
+        TargetPart = "Head",
+        Key = Enum.KeyCode.C,
+        Mode = "Hold",
+        WallCheck = true,
+        TeamCheck = false,
+        Prioritization = "ClosestToCrosshair"
+    },
     Hitbox = {
         Enabled = false,
         ExpandSize = 1.6,
@@ -301,6 +313,9 @@ local function validateConfig(data)
         c.Aimbot.FOV = clampNum(c.Aimbot.FOV, 20, 360) or c.Aimbot.FOV
         c.Aimbot.Smoothness = clampNum(c.Aimbot.Smoothness, 1, 20) or c.Aimbot.Smoothness
     end
+    if c.SilentAim and type(c.SilentAim) == "table" and type(c.SilentAim.FOV) == "number" then
+        c.SilentAim.FOV = clampNum(c.SilentAim.FOV, 20, 360) or c.SilentAim.FOV
+    end
     if c.Visuals then
         c.Visuals.DistanceLimit = clampNum(c.Visuals.DistanceLimit, 0, 10000) or c.Visuals.DistanceLimit
         c.Visuals.TextSize = clampNum(c.Visuals.TextSize, 8, 32) or c.Visuals.TextSize
@@ -396,6 +411,7 @@ local function getKeybindConflictNames(key, excludeFeature)
         return a == b or (tostring(a) == tostring(b))
     end
     if excludeFeature ~= "Aimbot" and sameKey(_G_Config.Aimbot and _G_Config.Aimbot.Key, key) then table.insert(list, "Aimbot") end
+    if excludeFeature ~= "SilentAim" and sameKey(_G_Config.SilentAim and _G_Config.SilentAim.Key, key) then table.insert(list, "Silent Aim") end
     if excludeFeature ~= "Speed" and sameKey(_G_Config.Movement and _G_Config.Movement.SpeedKey, key) then table.insert(list, "Speed") end
     if excludeFeature ~= "Fly" and sameKey(_G_Config.Movement and _G_Config.Movement.FlyKey, key) then table.insert(list, "Fly") end
     if excludeFeature ~= "Freecam" and sameKey(_G_Config.Movement and _G_Config.Movement.FreecamKey, key) then table.insert(list, "Freecam") end
@@ -416,6 +432,7 @@ local function notifyKeybindConflicts()
         end
     end
     add(_G_Config.Aimbot and _G_Config.Aimbot.Key, "Aimbot")
+    add(_G_Config.SilentAim and _G_Config.SilentAim.Key, "Silent Aim")
     add(_G_Config.Movement and _G_Config.Movement.SpeedKey, "Speed")
     add(_G_Config.Movement and _G_Config.Movement.FlyKey, "Fly")
     add(_G_Config.Movement and _G_Config.Movement.FreecamKey, "Freecam")
@@ -962,6 +979,28 @@ local function __axiom_build_ui_with_cascade(_G_Config)
         local secR = tab:PageSection({ Title = "Reset" })
         local formR = secR:Form()
         newRow(formR, "Reset Aimbot"):Right():Button({ Label = "Reset", Pushed = function() AxiomResetSection("Aimbot", "Aimbot") end })
+    end
+
+    do
+        local tab = pages:Tab({ Title = "Silent Aim", Icon = resolveIcon(iconBase.."combat.png", "rbxassetid://131576589857912") })
+        axiomTabs.SilentAim = tab
+        local sec = tab:PageSection({ Title = "Universal Silent Aim" })
+        local form = sec:Form()
+        newRow(form, "Enabled"):Right():Toggle({ Value = _G_Config.SilentAim.Enabled, ValueChanged = function(_, v) _G_Config.SilentAim.Enabled = v AxiomNotify("Axiom.win", "Silent Aim " .. (v and "on" or "off"), _G_Config) end })
+        newRow(form, "FOV Radius"):Right():Slider({ Minimum = 40, Maximum = 400, Value = _G_Config.SilentAim.FOV, ValueChanged = function(_, v) _G_Config.SilentAim.FOV = v end })
+        pullDown(newRow(form, "Prioritization (who to lock onto)"):Right(), { "ClosestToCrosshair", "ClosestDistance", "LowestHealth" }, ({ ClosestToCrosshair = 1, ClosestDistance = 2, LowestHealth = 3 })[_G_Config.SilentAim.Prioritization] or 1, function(i) _G_Config.SilentAim.Prioritization = ({ "ClosestToCrosshair", "ClosestDistance", "LowestHealth" })[i] end })
+        pullDown(newRow(form, "Target Part"):Right(), { "Head", "UpperTorso", "HumanoidRootPart" }, ({ Head = 1, UpperTorso = 2, HumanoidRootPart = 3 })[_G_Config.SilentAim.TargetPart] or 1, function(i) _G_Config.SilentAim.TargetPart = ({ "Head", "UpperTorso", "HumanoidRootPart" })[i] end })
+        pullDown(newRow(form, "Activation"):Right(), { "Hold", "Toggle", "Always On" }, ({ Hold = 1, Toggle = 2, ["Always On"] = 3 })[_G_Config.SilentAim.Mode] or 1, function(i) _G_Config.SilentAim.Mode = ({ "Hold", "Toggle", "Always On" })[i] end })
+        newRow(form, "Wall Check"):Right():Toggle({ Value = _G_Config.SilentAim.WallCheck, ValueChanged = function(_, v) _G_Config.SilentAim.WallCheck = v end })
+        newRow(form, "Team Check"):Right():Toggle({ Value = _G_Config.SilentAim.TeamCheck, ValueChanged = function(_, v) _G_Config.SilentAim.TeamCheck = v end })
+        newRow(form, "Key"):Right():KeybindField({ Value = _G_Config.SilentAim.Key, ValueChanged = function(_, k)
+            _G_Config.SilentAim.Key = k
+            local conflicts = getKeybindConflictNames(k, "Silent Aim")
+            if #conflicts > 0 then AxiomNotify("Axiom.win", "Key used by: " .. table.concat(conflicts, ", "), _G_Config) end
+        end })
+        local secR = tab:PageSection({ Title = "Reset" })
+        local formR = secR:Form()
+        newRow(formR, "Reset Silent Aim"):Right():Button({ Label = "Reset", Pushed = function() AxiomResetSection("SilentAim", "Silent Aim") end })
     end
 
     do
@@ -2257,6 +2296,45 @@ local function GetClosestTarget()
     return target
 end
 
+local function GetSilentAimTarget()
+    local cfg = _G_Config.SilentAim
+    if not cfg or not cfg.Enabled or not cfg.Active then return nil end
+    local distLimit = cfg.FOV and (cfg.FOV * 0.5) or math.huge
+    local mPos = UserInputService:GetMouseLocation()
+    local localHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local target = nil
+    local best = math.huge
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p == LocalPlayer or not p.Character then continue end
+        local part = p.Character:FindFirstChild(cfg.TargetPart) or p.Character:FindFirstChild("Head")
+        local hum = p.Character:FindFirstChildOfClass("Humanoid")
+        if not part or not hum or hum.Health <= 0 then continue end
+        if cfg.TeamCheck and hasMultipleTeams() and p.Team == LocalPlayer.Team then continue end
+        local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
+        if not onScreen then continue end
+        local toMouse = (Vector2.new(screenPos.X, screenPos.Y) - mPos).Magnitude
+        if toMouse > distLimit then continue end
+        if cfg.WallCheck then
+            local ok, blocked = pcall(function()
+                local params = RaycastParams.new()
+                params.FilterType = Enum.RaycastFilterType.Blacklist
+                params.FilterDescendantsInstances = { LocalPlayer.Character }
+                local dir = (part.Position - Camera.CFrame.Position).Unit
+                local ray = Workspace:Raycast(Camera.CFrame.Position, dir * 5000, params)
+                return ray and ray.Instance and not ray.Instance:IsDescendantOf(p.Character)
+            end)
+            if ok and blocked then continue end
+        end
+        local score = math.huge
+        if cfg.Prioritization == "ClosestToCrosshair" then score = toMouse
+        elseif cfg.Prioritization == "ClosestDistance" and localHrp then score = (localHrp.Position - part.Position).Magnitude
+        elseif cfg.Prioritization == "LowestHealth" then score = hum.Health
+        end
+        if score < best then best = score target = part end
+    end
+    return target
+end
+
 AxiomTrackConnection(UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     if input.KeyCode == _G_Config.Movement.SpeedKey then
@@ -2290,12 +2368,20 @@ AxiomTrackConnection(UserInputService.InputBegan:Connect(function(input, gpe)
             if _G_Config.Aimbot.Mode == "Toggle" then _G_Config.Aimbot.Active = not _G_Config.Aimbot.Active else _G_Config.Aimbot.Active = true end
         end
     end
+    if _G_Config.SilentAim and (input.KeyCode == _G_Config.SilentAim.Key or input.UserInputType == _G_Config.SilentAim.Key) then
+        if _G_Config.SilentAim.Enabled and _G_Config.SilentAim.Mode ~= "Always On" then
+            if _G_Config.SilentAim.Mode == "Toggle" then _G_Config.SilentAim.Active = not _G_Config.SilentAim.Active else _G_Config.SilentAim.Active = true end
+        end
+    end
 end))
 
 AxiomTrackConnection(UserInputService.InputEnded:Connect(function(input)
     if _G_Config.Misc.ZoomMode == "Hold" and input.KeyCode == _G_Config.Misc.ZoomKey then _G_Config.Misc.ZoomActive = false end
     if _G_Config.Aimbot.Mode == "Hold" and (input.KeyCode == _G_Config.Aimbot.Key or input.UserInputType == _G_Config.Aimbot.Key) then
         _G_Config.Aimbot.Active = false
+    end
+    if _G_Config.SilentAim and _G_Config.SilentAim.Mode == "Hold" and (input.KeyCode == _G_Config.SilentAim.Key or input.UserInputType == _G_Config.SilentAim.Key) then
+        _G_Config.SilentAim.Active = false
     end
     if _G_Config.Movement.SpeedMode == "Hold" and input.KeyCode == _G_Config.Movement.SpeedKey then _G_Config.Movement.SpeedActive = false end
     if _G_Config.Movement.FlyMode == "Hold" and input.KeyCode == _G_Config.Movement.FlyKey then _G_Config.Movement.FlyActive = false end
@@ -2392,6 +2478,13 @@ AxiomTrackConnection(RunService.RenderStepped:Connect(function(dt)
         _G_Config.Aimbot.Active = _G_Config.Aimbot.Enabled
     elseif not _G_Config.Aimbot.Enabled then
         _G_Config.Aimbot.Active = false
+    end
+    if _G_Config.SilentAim then
+        if _G_Config.SilentAim.Mode == "Always On" then
+            _G_Config.SilentAim.Active = _G_Config.SilentAim.Enabled
+        elseif not _G_Config.SilentAim.Enabled then
+            _G_Config.SilentAim.Active = false
+        end
     end
     if _G_Config.Movement.SpeedMode == "Always On" then
         _G_Config.Movement.SpeedActive = _G_Config.Movement.SpeedEnabled
@@ -2607,6 +2700,10 @@ AxiomTrackConnection(RunService.RenderStepped:Connect(function(dt)
     local tar = nil
     if _G_Config.Aimbot.Enabled then
         tar = GetClosestTarget()
+    end
+    if _G_Config.SilentAim then
+        _G.AxiomSilentAimTarget = GetSilentAimTarget()
+        _G.AxiomGetSilentAimTarget = GetSilentAimTarget
     end
     if _G_Config.Aimbot.Enabled and _G_Config.Aimbot.Active and tar then
         if _G_Config.Aimbot.VisualBT then
