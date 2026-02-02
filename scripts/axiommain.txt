@@ -171,7 +171,7 @@ local defaultConfig = {
     SilentAim = {
         Enabled = false,
         Active = false,
-        Method = "ClosestToCrosshair",
+        Method = "Raycast",
         FOV = 120,
         TargetPart = "Head",
         Key = Enum.KeyCode.C,
@@ -322,12 +322,17 @@ local function validateConfig(data)
         c.Visuals.TextSize = clampNum(c.Visuals.TextSize, 8, 32) or c.Visuals.TextSize
         c.Visuals.SkeletonSmoothSpeed = clampNum(c.Visuals.SkeletonSmoothSpeed, 0.05, 0.5) or c.Visuals.SkeletonSmoothSpeed
         c.Visuals.OutlineThickness = clampNum(c.Visuals.OutlineThickness, 1, 3) or c.Visuals.OutlineThickness
+        for _, k in ipairs({"Box2DUseGradient","Box3DUseGradient","SkeletonUseGradient","TracerUseGradient","HeadDotUseGradient","TextUseGradient","ChamsUseGradient","CenterDotUseGradient","OffscreenArrowUseGradient"}) do
+            if c.Visuals[k] == nil then c.Visuals[k] = false end
+        end
     end
     if c.Crosshair then
         c.Crosshair.Length = clampNum(c.Crosshair.Length, 1, 32) or c.Crosshair.Length
         c.Crosshair.Thickness = clampNum(c.Crosshair.Thickness, 1, 4) or c.Crosshair.Thickness
         c.Crosshair.SpinSpeed = clampNum(c.Crosshair.SpinSpeed, 0, 360) or c.Crosshair.SpinSpeed
         c.Crosshair.OutlineThickness = clampNum(c.Crosshair.OutlineThickness, 1, 3) or c.Crosshair.OutlineThickness
+        if c.Crosshair.UseGradient == nil then c.Crosshair.UseGradient = false end
+        if c.Crosshair.AxiomTextUseGradient == nil then c.Crosshair.AxiomTextUseGradient = false end
     end
     if c.Movement then
         c.Movement.SpeedValue = clampNum(c.Movement.SpeedValue, 1, 200) or c.Movement.SpeedValue
@@ -857,6 +862,11 @@ local function __axiom_build_ui_with_cascade(_G_Config)
         local h, s, v = c:ToHSV()
         local draggingWheel, draggingValue = false, false
         local connections = {}
+        local function inputPos2D(input)
+            local p = input and input.Position
+            if not p then return Vector2.new(0, 0) end
+            return Vector2.new(p.X or 0, p.Y or 0)
+        end
         local function setPreviewColor()
             local c = Color3.fromHSV(h, s, v)
             preview.BackgroundColor3 = c
@@ -883,17 +893,18 @@ local function __axiom_build_ui_with_cascade(_G_Config)
             setPreviewColor()
         end
         table.insert(connections, wheel.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingWheel = true; pointToHSV((input.Position - wheel.AbsolutePosition).X, (input.Position - wheel.AbsolutePosition).Y) end
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then local mp = inputPos2D(input); draggingWheel = true; pointToHSV((mp - wheel.AbsolutePosition).X, (mp - wheel.AbsolutePosition).Y) end
         end))
         table.insert(connections, wheel.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingWheel = false end end))
         table.insert(connections, valueBar.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingValue = true; pointToValue(input.Position.X) end
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingValue = true; pointToValue(inputPos2D(input).X) end
         end))
         table.insert(connections, valueBar.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingValue = false end end))
         table.insert(connections, UserInputService.InputChanged:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseMovement then
-                if draggingWheel then pointToHSV((input.Position - wheel.AbsolutePosition).X, (input.Position - wheel.AbsolutePosition).Y)
-                elseif draggingValue then pointToValue(input.Position.X) end
+                local mp = inputPos2D(input)
+                if draggingWheel then pointToHSV((mp - wheel.AbsolutePosition).X, (mp - wheel.AbsolutePosition).Y)
+                elseif draggingValue then pointToValue(mp.X) end
             end
         end))
         applyBtn.MouseButton1Click:Connect(function()
@@ -990,6 +1001,7 @@ local function __axiom_build_ui_with_cascade(_G_Config)
         local form = sec:Form()
         newRow(form, "Enabled"):Right():Toggle({ Value = _G_Config.SilentAim.Enabled, ValueChanged = function(_, v) _G_Config.SilentAim.Enabled = v AxiomNotify("Axiom.win", "Silent Aim " .. (v and "on" or "off"), _G_Config) end })
         newRow(form, "FOV Radius"):Right():Slider({ Minimum = 40, Maximum = 400, Value = _G_Config.SilentAim.FOV, ValueChanged = function(_, v) _G_Config.SilentAim.FOV = v end })
+        pullDown(newRow(form, "Method"):Right(), { "Raycast", "Mouse" }, ({ Raycast = 1, Mouse = 2 })[_G_Config.SilentAim.Method] or 1, function(i) _G_Config.SilentAim.Method = ({ "Raycast", "Mouse" })[i] end )
         pullDown(newRow(form, "Prioritization (who to lock onto)"):Right(), { "ClosestToCrosshair", "ClosestDistance", "LowestHealth" }, ({ ClosestToCrosshair = 1, ClosestDistance = 2, LowestHealth = 3 })[_G_Config.SilentAim.Prioritization] or 1, function(i) _G_Config.SilentAim.Prioritization = ({ "ClosestToCrosshair", "ClosestDistance", "LowestHealth" })[i] end )
         pullDown(newRow(form, "Target Part"):Right(), { "Head", "UpperTorso", "HumanoidRootPart" }, ({ Head = 1, UpperTorso = 2, HumanoidRootPart = 3 })[_G_Config.SilentAim.TargetPart] or 1, function(i) _G_Config.SilentAim.TargetPart = ({ "Head", "UpperTorso", "HumanoidRootPart" })[i] end )
         pullDown(newRow(form, "Activation"):Right(), { "Hold", "Toggle", "Always On" }, ({ Hold = 1, Toggle = 2, ["Always On"] = 3 })[_G_Config.SilentAim.Mode] or 1, function(i) _G_Config.SilentAim.Mode = ({ "Hold", "Toggle", "Always On" })[i] end )
