@@ -152,7 +152,7 @@ local defaultConfig = {
         OffscreenArrowGradientColor = Color3.fromRGB(200, 200, 200)
     },
     Crosshair = {
-        Enabled = true,
+        Enabled = false,
         Style = "cross",
         Length = 8,
         Thickness = 1,
