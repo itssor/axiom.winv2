@@ -3,391 +3,74 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Axiom.win — Config generator</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="axiom.css">
+  <title>Axiom.win</title>
   <style>
-    .page { max-width: 720px; margin: 0 auto; padding: 24px 20px 48px; font-family: var(--axiom-font); }
-    .page h1 { font-size: 1.5rem; margin: 0 0 8px 0; color: var(--axiom-text); }
-    .page p.lead { color: var(--axiom-muted); font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
-    .nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; max-width: 720px; margin: 0 auto; }
-    .nav-logo { font-size: 18px; font-weight: 700; color: var(--axiom-text); text-decoration: none; }
-    .nav-logo:hover { color: var(--axiom-accent); }
-    .nav-link { font-size: 13px; color: var(--axiom-muted); text-decoration: none; }
-    .nav-link:hover { color: var(--axiom-accent); }
-    .card { background: var(--axiom-surface); border: 1px solid var(--axiom-border); border-radius: var(--axiom-radius-lg); padding: 20px; margin-bottom: 16px; }
-    .card h2 { font-size: 14px; font-weight: 700; margin: 0 0 14px 0; color: var(--axiom-accent); cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
-    .card h2::after { content: "−"; color: var(--axiom-muted); }
-    .card.collapsed h2::after { content: "+"; }
-    .card.collapsed .card-body { display: none; }
-    .card-body { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px 20px; }
-    .field { display: flex; flex-direction: column; gap: 4px; }
-    .field label { font-size: 12px; color: var(--axiom-muted); }
-    .field input[type="number"], .field input[type="text"], .field select { padding: 8px 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--axiom-border); border-radius: 6px; color: var(--axiom-text); font-family: inherit; font-size: 13px; }
-    .field input[type="color"] { width: 100%; height: 32px; padding: 2px; border: 1px solid var(--axiom-border); border-radius: 6px; cursor: pointer; background: transparent; }
-    .field input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--axiom-accent); cursor: pointer; }
-    .field.row { flex-direction: row; align-items: center; }
-    .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 24px; }
-    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px); padding: 10px 20px; background: var(--axiom-surface); border: 1px solid var(--axiom-accent); border-radius: var(--axiom-radius); font-size: 13px; color: var(--axiom-accent); opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
-    .toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
-    .load-wrap { margin-bottom: 20px; }
-    .load-wrap textarea { width: 100%; min-height: 80px; padding: 12px; background: rgba(0,0,0,0.35); border: 1px solid var(--axiom-border); border-radius: var(--axiom-radius); color: var(--axiom-muted); font-family: ui-monospace, monospace; font-size: 12px; resize: vertical; }
-    .bg-mesh { position: fixed; inset: 0; pointer-events: none; z-index: -2; background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(88, 80, 180, 0.25) 0%, transparent 50%), var(--axiom-bg); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      min-height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0a0a12;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: #e0e0ec;
+      overflow: hidden;
+    }
+    .bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(88, 80, 180, 0.2) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 80% 60%, rgba(107, 140, 255, 0.12) 0%, transparent 45%);
+    }
+    .content {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 2rem;
+    }
+    .title {
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+      opacity: 0;
+      animation: fadeIn 0.8s ease forwards;
+    }
+    .sub {
+      font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+      color: #8888a0;
+      font-weight: 400;
+      opacity: 0;
+      animation: fadeIn 0.8s ease 0.2s forwards;
+    }
+    .dot {
+      display: inline-block;
+      width: 4px;
+      height: 4px;
+      margin-left: 2px;
+      background: #6b8cff;
+      border-radius: 50%;
+      opacity: 0;
+      animation: dotPulse 1.2s ease 0.5s infinite;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes dotPulse {
+      0%, 100% { opacity: 0.3; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1); }
+    }
   </style>
 </head>
 <body>
-  <div class="bg-mesh"></div>
-  <nav class="nav">
-    <a href="#" class="nav-logo">Axiom.win</a>
-    <a href="https://github.com/itssor/axiom.winv2/tree/main/scripts" target="_blank" rel="noopener" class="nav-link">GitHub</a>
-  </nav>
-  <main class="page">
-    <h1>Config generator</h1>
-    <p class="lead">Build your Axiom config here and copy the JSON. In-game: Config tab → Import → paste the JSON.</p>
-
-    <div class="load-wrap card">
-      <h2>Import existing config (optional)</h2>
-      <div class="card-body">
-        <div class="field" style="grid-column: 1 / -1;">
-          <label>Paste JSON from in-game Export, then click Load below</label>
-          <textarea id="importJson" placeholder='{"Aimbot":{...}, ...}'></textarea>
-        </div>
-        <button type="button" class="axiom-btn axiom-btn-ghost" id="btnLoad">Load into form</button>
-      </div>
-    </div>
-
-    <div id="sections"></div>
-
-    <div class="actions">
-      <button type="button" class="axiom-btn" id="btnCopy">Copy JSON</button>
-      <button type="button" class="axiom-btn axiom-btn-ghost" id="btnReset">Reset to defaults</button>
-    </div>
-  </main>
-  <div class="toast" id="toast">Copied</div>
-
-  <script>
-(function() {
-  function hexToRgb(hex) {
-    var m = hex.replace(/^#/, "").match(/^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
-    if (!m) return { r: 1, g: 1, b: 1 };
-    return { r: parseInt(m[1], 16) / 255, g: parseInt(m[2], 16) / 255, b: parseInt(m[3], 16) / 255 };
-  }
-  function rgbToHex(r, g, b) {
-    r = Math.round((r != null ? r : 1) * 255); g = Math.round((g != null ? g : 1) * 255); b = Math.round((b != null ? b : 1) * 255);
-    return "#" + [r, g, b].map(function(x) { var s = x.toString(16); return s.length === 1 ? "0" + s : s; }).join("");
-  }
-
-  var KEY_OPTS = [
-    "Enum.KeyCode.V", "Enum.KeyCode.F", "Enum.KeyCode.C", "Enum.KeyCode.X", "Enum.KeyCode.Z",
-    "Enum.KeyCode.Q", "Enum.KeyCode.E", "Enum.KeyCode.R", "Enum.KeyCode.T", "Enum.KeyCode.G",
-    "Enum.KeyCode.LeftShift", "Enum.KeyCode.RightShift", "Enum.KeyCode.LeftControl", "Enum.KeyCode.Space",
-    "Enum.KeyCode.One", "Enum.KeyCode.Two", "Enum.KeyCode.Three", "Enum.KeyCode.Four", "Enum.KeyCode.Five",
-    "Enum.UserInputType.MouseButton2", "Enum.UserInputType.MouseButton1",
-    "Enum.KeyCode.Unknown"
-  ];
-  var KEY_LABELS = { "Enum.UserInputType.MouseButton2": "Right Click", "Enum.UserInputType.MouseButton1": "Left Click", "Enum.KeyCode.Unknown": "None" };
-
-  function defaultConfig() {
-    return {
-      Aimbot: { Enabled: false, FOVCircle: false, FOV: 100, FOVFilled: false, FOVColor: { r: 1, g: 1, b: 1 }, FOVThickness: 1, SnapLines: false, TargetPart: "Head", Key: "Enum.UserInputType.MouseButton2", Mode: "Hold", WallCheck: false, TeamCheck: false, Smoothness: 5, Prioritization: "Closest Crosshair", TargetHUD: true, VisualBT: false, Method: "Mouse", SnapLineColor: { r: 1, g: 1, b: 1 }, SnapLineThickness: 1 },
-      Visuals: { Enabled: false, TeamCheck: false, DistanceLimit: 1000, TextSize: 13, InfoPosition: "Top", HealthMode: "Text", HealthBarSide: "Left", Box2D: false, Box2DColor: { r: 1, g: 1, b: 1 }, Box2DTransparency: 1, Box3D: false, Box3DColor: { r: 1, g: 1, b: 1 }, Box3DTransparency: 1, Skeleton: false, SkeletonColor: { r: 1, g: 1, b: 1 }, SkeletonTransparency: 1, Tracer: false, TracerColor: { r: 1, g: 1, b: 1 }, TracerTransparency: 1, TracerOrigin: "Bottom", HeadDot: false, HeadDotColor: { r: 1, g: 1, b: 1 }, HeadDotTransparency: 1, HeadDotRadius: 3, Name: false, DisplayName: false, Distance: false, Health: false, ToolText: false, TextColor: { r: 1, g: 1, b: 1 }, TextTransparency: 1, Chams: false, ChamsColor: { r: 0, g: 0.48, b: 1 }, ChamsTransparency: 0.5, ChamsMethod: "Highlight", ToolChams: false, ToolColor: { r: 1, g: 1, b: 1 }, ToolTransparency: 0.5, OffscreenArrows: false, OffscreenArrowColor: { r: 1, g: 1, b: 1 }, OffscreenArrowSize: 16, OffscreenArrowTransparency: 1, CenterDot: false, CenterDotColor: { r: 1, g: 1, b: 1 }, CenterDotRadius: 2, Outline: true, OutlineColor: { r: 0, g: 0, b: 0 }, OutlineThickness: 1, SkeletonSmooth: false, SkeletonSmoothSpeed: 0.2, Box2DUseGradient: false, Box2DGradientColor: { r: 0.78, g: 0.78, b: 0.78 }, Box3DUseGradient: false, Box3DGradientColor: { r: 0.78, g: 0.78, b: 0.78 }, SkeletonUseGradient: false, SkeletonGradientColor: { r: 0.78, g: 0.78, b: 0.78 }, TracerUseGradient: false, TracerGradientColor: { r: 0.78, g: 0.78, b: 0.78 }, HeadDotUseGradient: false, HeadDotGradientColor: { r: 0.78, g: 0.78, b: 0.78 }, TextUseGradient: false, TextGradientColor: { r: 0.78, g: 0.78, b: 0.78 }, ChamsUseGradient: false, ChamsGradientColor: { r: 0.4, g: 0.7, b: 1 }, CenterDotUseGradient: false, CenterDotGradientColor: { r: 0.78, g: 0.78, b: 0.78 }, OffscreenArrowUseGradient: false, OffscreenArrowGradientColor: { r: 0.78, g: 0.78, b: 0.78 } },
-      Crosshair: { Enabled: true, Style: "cross", Length: 8, Thickness: 1, DotMode: false, Color: { r: 1, g: 1, b: 1 }, UseGradient: false, GradientColor: { r: 0.78, g: 0.78, b: 0.78 }, Outline: true, OutlineColor: { r: 0, g: 0, b: 0 }, OutlineThickness: 1, Spin: false, SpinSpeed: 90, ShowAxiomText: true, AxiomTextColor: { r: 1, g: 1, b: 1 }, AxiomTextUseGradient: false, AxiomTextGradientColor: { r: 0.78, g: 0.78, b: 0.78 } },
-      Hitbox: { Enabled: false, ExpandSize: 1.6, Transparency: 0.6, Color: { r: 1, g: 0, b: 0 }, OutlineColor: { r: 1, g: 1, b: 1 }, ShowOutline: true, Head: true, Torso: true },
-      Movement: { SpeedEnabled: false, SpeedValue: 16, SpeedKey: "Enum.KeyCode.V", SpeedMode: "Toggle", SpeedMethod: "CFrame", FlyEnabled: false, FlySpeed: 50, FlyKey: "Enum.KeyCode.F", FlyMode: "Toggle", FlyMethod: "Velocity", Noclip: false, InfJump: false, FreecamEnabled: false, FreecamSpeed: 1, FreecamKey: "Enum.KeyCode.Unknown", FreecamMode: "Toggle", FreecamSmoothness: 0.25, FreecamFreeCursor: true, Bhop: false, TPWalk: false, TPStep: 3, TPRate: 0.05, Spinbot: false, SpinSpeed: 360 },
-      Misc: { FullBright: false, ZoomEnabled: false, ZoomKey: "Enum.KeyCode.Z", ZoomMethod: "FOV", ZoomAmount: 30, ZoomMode: "Toggle", StreamerMode: false, SpoofName: "Anonymous", MySpoofName: "Anonymous", NotificationMethod: "Window Alert", NotificationPosition: "TopRight", NotificationDuration: 3, NotificationAnimate: true, NotificationSound: "tf2 menu", NotificationVolume: 1, WatermarkEnabled: true, WatermarkPosition: "TopLeft", UIPreset: "Default", ProximityPromptInstant: false, FOVEnabled: false, FOV: 90, DarkMode: true, AmbientEnabled: false, AmbientColor: { r: 1, g: 1, b: 1 }, SkyboxEnabled: false, SkyboxID: "142283166" },
-      MM2: { SilentAimEnabled: false, SilentAimKey: "Enum.KeyCode.X", SilentAimMode: "Hold", KillAllEnabled: false, KillAllKey: "Enum.KeyCode.C", KillAllMode: "Hold", GunESP: false, MurdererESP: true, SheriffESP: true, RoleESP: true, GunESPColor: { r: 0, g: 1, b: 0 }, MurdererESPColor: { r: 1, g: 0, b: 0 }, SheriffESPColor: { r: 0, g: 0.4, b: 1 }, InnocentESPColor: { r: 0.78, g: 0.78, b: 0.78 }, TpToGun: false, AutoGunGrab: false, TpToMurderer: false, TpToSheriff: false, AutoFarmCoins: false }
-    };
-  }
-
-  function deepClone(o) {
-    if (o === null || typeof o !== "object") return o;
-    if (typeof o.r === "number" && typeof o.g === "number" && typeof o.b === "number" && !o._t) return { r: o.r, g: o.g, b: o.b };
-    var out = Array.isArray(o) ? [] : {};
-    for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) out[k] = deepClone(o[k]);
-    return out;
-  }
-
-  function toSerializable(obj) {
-    if (obj === null || typeof obj !== "object") return obj;
-    if (typeof obj.r === "number" && typeof obj.g === "number" && typeof obj.b === "number" && obj._t === undefined) return { _t: "C", r: obj.r, g: obj.g, b: obj.b };
-    if (typeof obj === "string" && obj.indexOf("Enum.") === 0) return { _t: "E", s: obj };
-    var out = Array.isArray(obj) ? [] : {};
-    for (var k in obj) if (Object.prototype.hasOwnProperty.call(obj, k)) out[k] = toSerializable(obj[k]);
-    return out;
-  }
-
-  function reviveIncoming(obj) {
-    if (obj === null || typeof obj !== "object") return obj;
-    if (obj._t === "C" && typeof obj.r === "number") return { r: obj.r, g: obj.g, b: obj.b };
-    if (obj._t === "E" && typeof obj.s === "string") return obj.s;
-    if (typeof obj.R === "number" && typeof obj.G === "number" && typeof obj.B === "number") return { r: obj.R / 255, g: obj.G / 255, b: obj.B / 255 };
-    if (typeof obj.r === "number" && typeof obj.g === "number" && typeof obj.b === "number" && !obj._t) return { r: obj.r, g: obj.g, b: obj.b };
-    var out = Array.isArray(obj) ? [] : {};
-    for (var k in obj) if (Object.prototype.hasOwnProperty.call(obj, k)) out[k] = reviveIncoming(obj[k]);
-    return out;
-  }
-
-  function mergeInto(target, source) {
-    for (var k in source) {
-      if (Object.prototype.hasOwnProperty.call(source, k)) {
-        var s = source[k], t = target[k];
-        if (s && typeof s === "object" && !Array.isArray(s) && typeof s.r !== "number" && t && typeof t === "object") mergeInto(t, s);
-        else target[k] = deepClone(s);
-      }
-    }
-  }
-
-  var state = defaultConfig();
-
-  function bindNumber(section, key, inputId) {
-    var el = document.getElementById(inputId);
-    if (!el) return;
-    var v = state[section][key];
-    el.value = v;
-    el.addEventListener("input", function() { state[section][key] = parseFloat(el.value) || 0; });
-  }
-  function bindCheck(section, key, inputId) {
-    var el = document.getElementById(inputId);
-    if (!el) return;
-    el.checked = state[section][key];
-    el.addEventListener("change", function() { state[section][key] = el.checked; });
-  }
-  function bindSelect(section, key, inputId, options) {
-    var el = document.getElementById(inputId);
-    if (!el) return;
-    var v = state[section][key];
-    var idx = options.indexOf(v);
-    if (idx >= 0) el.value = idx; else el.value = 0;
-    el.addEventListener("change", function() { state[section][key] = options[parseInt(el.value, 10)]; });
-  }
-  function bindKey(section, key, inputId) {
-    var el = document.getElementById(inputId);
-    if (!el) return;
-    var v = state[section][key];
-    var idx = KEY_OPTS.indexOf(v);
-    if (idx >= 0) el.value = idx; else el.value = KEY_OPTS.length - 1;
-    el.addEventListener("change", function() { state[section][key] = KEY_OPTS[parseInt(el.value, 10)]; });
-  }
-  function bindColor(section, key, inputId) {
-    var el = document.getElementById(inputId);
-    if (!el) return;
-    var c = state[section][key];
-    el.value = rgbToHex(c.r, c.g, c.b);
-    el.addEventListener("input", function() { state[section][key] = hexToRgb(el.value); });
-  }
-
-  function addField(parent, type, label, id, section, key, opts) {
-    var wrap = document.createElement("div");
-    wrap.className = "field" + (type === "checkbox" ? " row" : "");
-    var lab = document.createElement("label");
-    lab.htmlFor = id;
-    lab.textContent = label;
-    wrap.appendChild(lab);
-    var el;
-    if (type === "checkbox") {
-      el = document.createElement("input");
-      el.type = "checkbox";
-      el.id = id;
-      el.checked = state[section][key];
-      el.dataset.section = section;
-      el.dataset.key = key;
-      el.addEventListener("change", function() { state[section][key] = el.checked; });
-    } else if (type === "number") {
-      el = document.createElement("input");
-      el.type = "number";
-      el.id = id;
-      el.value = state[section][key];
-      el.min = opts && opts.min != null ? opts.min : "";
-      el.max = opts && opts.max != null ? opts.max : "";
-      el.dataset.section = section;
-      el.dataset.key = key;
-      el.addEventListener("input", function() { state[section][key] = parseFloat(el.value) || 0; });
-    } else if (type === "select") {
-      el = document.createElement("select");
-      el.id = id;
-      el.dataset.section = section;
-      el.dataset.key = key;
-      el.dataset.options = (opts && opts.options ? opts.options : []).join("\n");
-      var options = opts && opts.options ? opts.options : [];
-      options.forEach(function(o, i) { var opt = document.createElement("option"); opt.value = i; opt.textContent = o; el.appendChild(opt); });
-      var cur = state[section][key];
-      var idx = options.indexOf(cur);
-      el.value = idx >= 0 ? idx : 0;
-      el.addEventListener("change", function() { state[section][key] = options[parseInt(el.value, 10)]; });
-    } else if (type === "key") {
-      el = document.createElement("select");
-      el.id = id;
-      el.dataset.section = section;
-      el.dataset.key = key;
-      el.dataset.keySelect = "1";
-      KEY_OPTS.forEach(function(o, i) { var opt = document.createElement("option"); opt.value = i; opt.textContent = KEY_LABELS[o] || o.replace("Enum.KeyCode.", "").replace("Enum.UserInputType.", ""); el.appendChild(opt); });
-      var idx = KEY_OPTS.indexOf(state[section][key]);
-      el.value = idx >= 0 ? idx : KEY_OPTS.length - 1;
-      el.addEventListener("change", function() { state[section][key] = KEY_OPTS[parseInt(el.value, 10)]; });
-    } else if (type === "color") {
-      el = document.createElement("input");
-      el.type = "color";
-      el.id = id;
-      el.dataset.section = section;
-      el.dataset.key = key;
-      var c = state[section][key];
-      el.value = rgbToHex(c.r, c.g, c.b);
-      el.addEventListener("input", function() { state[section][key] = hexToRgb(el.value); });
-    } else {
-      el = document.createElement("input");
-      el.type = "text";
-      el.id = id;
-      el.value = state[section][key];
-      el.dataset.section = section;
-      el.dataset.key = key;
-      el.addEventListener("input", function() { state[section][key] = el.value; });
-    }
-    wrap.appendChild(el);
-    parent.appendChild(wrap);
-  }
-
-  function syncFormFromState() {
-    document.querySelectorAll("[data-section][data-key]").forEach(function(el) {
-      var s = el.dataset.section, k = el.dataset.key;
-      if (!state[s] || state[s][k] === undefined) return;
-      var v = state[s][k];
-      if (el.type === "checkbox") el.checked = !!v;
-      else if (el.type === "number") el.value = v;
-      else if (el.type === "color" && v && typeof v.r === "number") el.value = rgbToHex(v.r, v.g, v.b);
-      else if (el.dataset.keySelect === "1") { var idx = KEY_OPTS.indexOf(v); el.value = idx >= 0 ? idx : KEY_OPTS.length - 1; }
-      else if (el.dataset.options) { var opts = el.dataset.options.split("\n"); var idx = opts.indexOf(v); el.value = idx >= 0 ? idx : 0; }
-    });
-  }
-
-  function renderSection(title, sectionKey, fields) {
-    var card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = "<h2>" + title + "</h2><div class=\"card-body\"></div>";
-    var body = card.querySelector(".card-body");
-    fields.forEach(function(f) { addField(body, f.type, f.label, f.id, sectionKey, f.key, f.opts); });
-    card.querySelector("h2").addEventListener("click", function() { card.classList.toggle("collapsed"); });
-    document.getElementById("sections").appendChild(card);
-  }
-
-  renderSection("Aimbot", "Aimbot", [
-    { type: "checkbox", label: "Enabled", id: "aim_enabled", key: "Enabled" },
-    { type: "checkbox", label: "FOV Circle", id: "aim_fovcircle", key: "FOVCircle" },
-    { type: "number", label: "FOV", id: "aim_fov", key: "FOV", opts: { min: 20, max: 360 } },
-    { type: "checkbox", label: "FOV Filled", id: "aim_fovfilled", key: "FOVFilled" },
-    { type: "color", label: "FOV Color", id: "aim_fovcolor", key: "FOVColor" },
-    { type: "key", label: "Key", id: "aim_key", key: "Key" },
-    { type: "select", label: "Mode", id: "aim_mode", key: "Mode", opts: { options: ["Hold", "Toggle", "Always On"] } },
-    { type: "number", label: "Smoothness", id: "aim_smooth", key: "Smoothness", opts: { min: 1, max: 20 } },
-    { type: "select", label: "Target Part", id: "aim_part", key: "TargetPart", opts: { options: ["Head", "UpperTorso", "HumanoidRootPart"] } }
-  ]);
-  renderSection("Visuals", "Visuals", [
-    { type: "checkbox", label: "ESP Enabled", id: "vis_enabled", key: "Enabled" },
-    { type: "checkbox", label: "2D Box", id: "vis_box2d", key: "Box2D" },
-    { type: "checkbox", label: "3D Box", id: "vis_box3d", key: "Box3D" },
-    { type: "checkbox", label: "Skeleton", id: "vis_skel", key: "Skeleton" },
-    { type: "checkbox", label: "Tracer", id: "vis_tracer", key: "Tracer" },
-    { type: "checkbox", label: "Head Dot", id: "vis_headdot", key: "HeadDot" },
-    { type: "checkbox", label: "Outline", id: "vis_outline", key: "Outline" },
-    { type: "color", label: "Outline Color", id: "vis_outlinecolor", key: "OutlineColor" },
-    { type: "color", label: "Text Color", id: "vis_textcolor", key: "TextColor" },
-    { type: "number", label: "Text Size", id: "vis_textsize", key: "TextSize", opts: { min: 8, max: 32 } },
-    { type: "number", label: "Distance Limit", id: "vis_dist", key: "DistanceLimit", opts: { min: 100, max: 5000 } }
-  ]);
-  renderSection("Crosshair", "Crosshair", [
-    { type: "checkbox", label: "Enabled", id: "ch_enabled", key: "Enabled" },
-    { type: "select", label: "Style", id: "ch_style", key: "Style", opts: { options: ["dot", "line", "cross"] } },
-    { type: "number", label: "Length", id: "ch_length", key: "Length", opts: { min: 1, max: 32 } },
-    { type: "number", label: "Thickness", id: "ch_thick", key: "Thickness", opts: { min: 1, max: 4 } },
-    { type: "checkbox", label: "Dot Mode", id: "ch_dot", key: "DotMode" },
-    { type: "color", label: "Color", id: "ch_color", key: "Color" },
-    { type: "checkbox", label: "Outline", id: "ch_outline", key: "Outline" },
-    { type: "checkbox", label: "Spin", id: "ch_spin", key: "Spin" },
-    { type: "number", label: "Spin Speed", id: "ch_spinspeed", key: "SpinSpeed", opts: { min: 0, max: 360 } },
-    { type: "checkbox", label: "Show axiom.win text", id: "ch_text", key: "ShowAxiomText" }
-  ]);
-  renderSection("Movement", "Movement", [
-    { type: "checkbox", label: "Speed", id: "mov_speed", key: "SpeedEnabled" },
-    { type: "number", label: "Speed Value", id: "mov_speedval", key: "SpeedValue", opts: { min: 1, max: 200 } },
-    { type: "key", label: "Speed Key", id: "mov_speedkey", key: "SpeedKey" },
-    { type: "checkbox", label: "Fly", id: "mov_fly", key: "FlyEnabled" },
-    { type: "number", label: "Fly Speed", id: "mov_flyspeed", key: "FlySpeed", opts: { min: 10, max: 500 } },
-    { type: "key", label: "Fly Key", id: "mov_flykey", key: "FlyKey" },
-    { type: "checkbox", label: "Noclip", id: "mov_noclip", key: "Noclip" },
-    { type: "checkbox", label: "Infinite Jump", id: "mov_infjump", key: "InfJump" },
-    { type: "key", label: "Freecam Key", id: "mov_freecamkey", key: "FreecamKey" }
-  ]);
-  renderSection("Misc", "Misc", [
-    { type: "checkbox", label: "FullBright", id: "misc_fb", key: "FullBright" },
-    { type: "checkbox", label: "Zoom", id: "misc_zoom", key: "ZoomEnabled" },
-    { type: "key", label: "Zoom Key", id: "misc_zoomkey", key: "ZoomKey" },
-    { type: "number", label: "Zoom Amount", id: "misc_zoomamt", key: "ZoomAmount", opts: { min: 5, max: 120 } },
-    { type: "checkbox", label: "Streamer Mode", id: "misc_streamer", key: "StreamerMode" },
-    { type: "checkbox", label: "Watermark", id: "misc_wm", key: "WatermarkEnabled" },
-    { type: "number", label: "Notification Duration", id: "misc_notifdur", key: "NotificationDuration", opts: { min: 0.25, max: 30 } }
-  ]);
-  renderSection("Hitbox", "Hitbox", [
-    { type: "checkbox", label: "Enabled", id: "hb_enabled", key: "Enabled" },
-    { type: "number", label: "Expand Size", id: "hb_expand", key: "ExpandSize", opts: { min: 1, max: 3 } },
-    { type: "color", label: "Color", id: "hb_color", key: "Color" }
-  ]);
-  renderSection("MM2", "MM2", [
-    { type: "checkbox", label: "Silent Aim", id: "mm2_silent", key: "SilentAimEnabled" },
-    { type: "key", label: "Silent Aim Key", id: "mm2_silentkey", key: "SilentAimKey" },
-    { type: "checkbox", label: "Kill All", id: "mm2_killall", key: "KillAllEnabled" },
-    { type: "key", label: "Kill All Key", id: "mm2_killallkey", key: "KillAllKey" },
-    { type: "checkbox", label: "Gun ESP", id: "mm2_gunesp", key: "GunESP" },
-    { type: "checkbox", label: "Murderer ESP", id: "mm2_murderer", key: "MurdererESP" },
-    { type: "checkbox", label: "Sheriff ESP", id: "mm2_sheriff", key: "SheriffESP" }
-  ]);
-
-  function getExportJson() {
-    return JSON.stringify(toSerializable(deepClone(state)), null, 2);
-  }
-
-  var toast = document.getElementById("toast");
-  function showToast(msg) {
-    toast.textContent = msg || "Copied";
-    toast.classList.add("visible");
-    setTimeout(function() { toast.classList.remove("visible"); }, 2200);
-  }
-
-  document.getElementById("btnCopy").addEventListener("click", function() {
-    var json = getExportJson();
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(json).then(function() { showToast("Copied"); }).catch(function() {
-        var ta = document.createElement("textarea"); ta.value = json; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
-        try { document.execCommand("copy"); showToast("Copied"); } catch (e) {}
-        document.body.removeChild(ta);
-      });
-    } else {
-      var ta = document.createElement("textarea"); ta.value = json; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
-      try { document.execCommand("copy"); showToast("Copied"); } catch (e) {}
-      document.body.removeChild(ta);
-    }
-  });
-
-  document.getElementById("btnReset").addEventListener("click", function() {
-    state = defaultConfig();
-    syncFormFromState();
-    showToast("Reset to defaults");
-  });
-
-  document.getElementById("btnLoad").addEventListener("click", function() {
-    var raw = document.getElementById("importJson").value.trim();
-    if (!raw) { showToast("Paste JSON first"); return; }
-    try {
-      var data = JSON.parse(raw);
-      var revived = reviveIncoming(data);
-      mergeInto(state, revived);
-      syncFormFromState();
-      showToast("Config loaded");
-    } catch (e) {
-      showToast("Invalid JSON");
-    }
-  });
-})();
-  </script>
+  <div class="bg" aria-hidden="true"></div>
+  <div class="content">
+    <p class="title">Axiom.win</p>
+    <p class="sub">Site in development<span class="dot"></span><span class="dot"></span><span class="dot"></span></p>
+  </div>
 </body>
 </html>
