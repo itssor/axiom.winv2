@@ -3,825 +3,391 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Axiom.win — Roblox loader</title>
+  <title>Axiom.win — Config generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="axiom.css">
   <style>
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    @keyframes loaderPulse {
-      0%, 100% { opacity: 0.5; transform: scaleY(1); }
-      50% { opacity: 1; transform: scaleY(0.4); }
-    }
-    @keyframes loaderShimmer {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
-    }
-    @keyframes loaderBar {
-      0% { width: 0; opacity: 0.8; }
-      50% { width: 70%; opacity: 1; }
-      100% { width: 100%; opacity: 0.8; }
-    }
-    @keyframes gradientShift {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
-    @keyframes float {
-      0%, 100% { transform: translate(0, 0); }
-      33% { transform: translate(6px, -6px); }
-      66% { transform: translate(-4px, 4px); }
-    }
-
-    .page-loader {
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      background: var(--axiom-bg);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 32px;
-      transition: opacity 0.7s ease, visibility 0.7s ease;
-      font-family: var(--axiom-font);
-    }
-    .page-loader.done {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
-    .page-loader-logo {
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      background: linear-gradient(90deg, var(--axiom-accent), #b8a0ff, var(--axiom-accent));
-      background-size: 200% auto;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: gradientShift 2.5s ease infinite;
-    }
-    .page-loader-bars {
-      display: flex;
-      gap: 8px;
-      align-items: flex-end;
-      height: 24px;
-    }
-    .page-loader-bars span {
-      width: 6px;
-      height: 100%;
-      background: var(--axiom-accent);
-      border-radius: 3px;
-      animation: loaderPulse 0.8s ease-in-out infinite;
-    }
-    .page-loader-bars span:nth-child(1) { animation-delay: 0s; }
-    .page-loader-bars span:nth-child(2) { animation-delay: 0.15s; }
-    .page-loader-bars span:nth-child(3) { animation-delay: 0.3s; }
-    .page-loader-bars span:nth-child(4) { animation-delay: 0.45s; }
-    .page-loader-bars span:nth-child(5) { animation-delay: 0.6s; }
-    .page-loader-text {
-      font-size: 12px;
-      color: var(--axiom-muted);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px 32px;
-      max-width: 1200px;
-      margin: 0 auto;
-      font-family: var(--axiom-font);
-    }
-    .nav-logo {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--axiom-text);
-      text-decoration: none;
-      transition: color 0.25s, text-shadow 0.25s;
-    }
-    .nav-logo:hover {
-      color: var(--axiom-accent);
-      text-shadow: 0 0 20px var(--axiom-glow);
-    }
-    .nav-link {
-      font-size: 14px;
-      color: var(--axiom-muted);
-      text-decoration: none;
-      transition: color 0.2s, transform 0.2s;
-    }
-    .nav-link:hover {
-      color: var(--axiom-accent);
-      transform: translateX(2px);
-    }
-
-    .tabs-wrap {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 32px 24px;
-    }
-    .tabs {
-      display: flex;
-      gap: 4px;
-      border-bottom: 1px solid var(--axiom-border);
-      font-family: var(--axiom-font);
-    }
-    .tabs button {
-      padding: 12px 20px;
-      background: none;
-      border: none;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -1px;
-      color: var(--axiom-muted);
-      font-family: inherit;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: color 0.2s, border-color 0.2s;
-    }
-    .tabs button:hover {
-      color: var(--axiom-text);
-    }
-    .tabs button.active {
-      color: var(--axiom-accent);
-      border-bottom-color: var(--axiom-accent);
-    }
-
-    .tab-content {
-      position: relative;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 40px 24px 56px;
-      min-height: 50vh;
-    }
-    .tab-panel {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      padding: 0 24px;
-      opacity: 0;
-      pointer-events: none;
-      transform: translateX(100%);
-    }
-    .tab-panel.active {
-      position: relative;
-      opacity: 1;
-      pointer-events: auto;
-      transform: translateX(0);
-    }
-
-    .hero-title {
-      font-family: var(--axiom-font);
-      font-size: clamp(2rem, 5vw, 3rem);
-      font-weight: 700;
-      margin: 0 0 16px 0;
-      line-height: 1.15;
-      background: linear-gradient(135deg, #fff 0%, var(--axiom-accent) 45%, #b8a0ff 100%);
-      background-size: 200% auto;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: gradientShift 10s ease infinite 1s;
-    }
-    .hero-desc {
-      font-size: 16px;
-      color: var(--axiom-muted);
-      line-height: 1.6;
-      margin-bottom: 24px;
-    }
-    .copy-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 14px 26px;
-      background: var(--axiom-accent);
-      color: #0a0a12;
-      border: none;
-      border-radius: var(--axiom-radius);
-      font-family: var(--axiom-font);
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
-    }
-    .copy-btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 30px var(--axiom-glow);
-      background: var(--axiom-accent-hover);
-    }
-    .copy-btn:active { transform: translateY(-1px); }
-    .copy-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
-
-    .loader-block {
-      background: var(--axiom-surface);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid var(--axiom-border);
-      border-radius: var(--axiom-radius-lg);
-      padding: 24px;
-      margin-top: 20px;
-      transition: box-shadow 0.3s, border-color 0.3s;
-    }
-    .loader-block:hover {
-      border-color: rgba(107, 140, 255, 0.2);
-      box-shadow: 0 0 40px rgba(107, 140, 255, 0.08);
-    }
-    .loader-code-wrap {
-      overflow-x: auto;
-      overflow-y: hidden;
-      padding: 16px;
-      background: rgba(0, 0, 0, 0.35);
-      border-radius: var(--axiom-radius);
-      margin-bottom: 16px;
-      border: 1px solid rgba(255,255,255,0.06);
-      -webkit-overflow-scrolling: touch;
-    }
-    .loader-code {
-      font-family: ui-monospace, monospace;
-      font-size: 12px;
-      line-height: 1.5;
-      color: var(--axiom-muted);
-      white-space: pre;
-      min-width: min-content;
-      margin: 0;
-    }
-    .loader-cta { text-align: center; margin-top: 16px; }
-
-    .section-title {
-      font-family: var(--axiom-font);
-      font-size: clamp(1.35rem, 3vw, 1.75rem);
-      font-weight: 700;
-      margin-bottom: 12px;
-      letter-spacing: -0.02em;
-      opacity: 0;
-      transform: translateY(14px);
-      transition: opacity 0.5s ease, transform 0.5s ease;
-    }
-    .section-title.in-view {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    .section-desc {
-      color: var(--axiom-muted);
-      font-size: 15px;
-      line-height: 1.5;
-      margin-bottom: 24px;
-      opacity: 0;
-      transform: translateY(10px);
-      transition: opacity 0.5s ease 0.08s, transform 0.5s ease 0.08s;
-    }
-    .section-desc.in-view {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .why-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 20px;
-      margin-top: 24px;
-    }
-    .why-card {
-      background: var(--axiom-surface);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid var(--axiom-border);
-      border-radius: var(--axiom-radius-lg);
-      padding: 24px 20px;
-      opacity: 0;
-      transform: translateY(16px);
-      transition: opacity 0.45s ease, transform 0.45s ease, border-color 0.3s, box-shadow 0.3s;
-    }
-    .why-card.in-view {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    .why-card:nth-child(1) { transition-delay: 0s; }
-    .why-card:nth-child(2) { transition-delay: 0.08s; }
-    .why-card:nth-child(3) { transition-delay: 0.16s; }
-    .why-card:hover {
-      transform: translateY(-4px);
-      border-color: rgba(107, 140, 255, 0.35);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(107, 140, 255, 0.1);
-    }
-    .why-card h3 {
-      font-family: var(--axiom-font);
-      font-size: 17px;
-      font-weight: 700;
-      margin: 0 0 8px 0;
-    }
-    .why-card p {
-      font-size: 14px;
-      color: var(--axiom-muted);
-      line-height: 1.5;
-      margin: 0;
-    }
-
-    .faq-list { max-width: 640px; }
-    .faq-item {
-      border-bottom: 1px solid var(--axiom-border);
-      opacity: 0;
-      transform: translateY(8px);
-      transition: opacity 0.4s ease, transform 0.4s ease;
-    }
-    .faq-item.in-view {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    .faq-item:nth-child(1) { transition-delay: 0s; }
-    .faq-item:nth-child(2) { transition-delay: 0.06s; }
-    .faq-item:nth-child(3) { transition-delay: 0.12s; }
-    .faq-item:nth-child(4) { transition-delay: 0.18s; }
-    .faq-item summary {
-      font-family: var(--axiom-font);
-      font-size: 15px;
-      font-weight: 600;
-      padding: 18px 0;
-      cursor: pointer;
-      list-style: none;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      transition: color 0.2s;
-    }
-    .faq-item summary:hover { color: var(--axiom-accent); }
-    .faq-item summary::-webkit-details-marker { display: none; }
-    .faq-item summary::after {
-      content: "+";
-      font-size: 18px;
-      color: var(--axiom-muted);
-    }
-    .faq-item[open] summary::after { content: "−"; }
-    .faq-item p {
-      padding-bottom: 18px;
-      font-size: 14px;
-      color: var(--axiom-muted);
-      line-height: 1.6;
-      margin: 0;
-    }
-
-    .games-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 20px;
-      justify-items: center;
-    }
-    .game-card {
-      width: 100%;
-      max-width: 200px;
-      background: var(--axiom-surface);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid var(--axiom-border);
-      border-radius: var(--axiom-radius-lg);
-      overflow: hidden;
-      opacity: 0;
-      transform: translateY(12px);
-      transition: opacity 0.4s ease, transform 0.4s ease, border-color 0.3s, box-shadow 0.3s;
-    }
-    .game-card.in-view {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    .game-card:nth-child(1) { transition-delay: 0s; }
-    .game-card:nth-child(2) { transition-delay: 0.05s; }
-    .game-card:nth-child(3) { transition-delay: 0.1s; }
-    .game-card:nth-child(4) { transition-delay: 0.15s; }
-    .game-card:nth-child(5) { transition-delay: 0.2s; }
-    .game-card:nth-child(n+6) { transition-delay: 0.25s; }
-    .game-card:hover {
-      transform: translateY(-6px) scale(1.02);
-      border-color: rgba(107, 140, 255, 0.4);
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(107, 140, 255, 0.12);
-    }
-    .game-card-thumb {
-      aspect-ratio: 1;
-      width: 100%;
-      object-fit: cover;
-      background: rgba(0, 0, 0, 0.3);
-      transition: transform 0.4s;
-    }
-    .game-card:hover .game-card-thumb { transform: scale(1.05); }
-    .game-card-name {
-      font-family: var(--axiom-font);
-      font-size: 14px;
-      font-weight: 600;
-      padding: 14px 16px;
-      text-align: center;
-      color: var(--axiom-text);
-    }
-
-    .footer {
-      text-align: center;
-      padding: 32px 24px;
-      font-size: 13px;
-      color: var(--axiom-muted);
-      border-top: 1px solid var(--axiom-border);
-      font-family: var(--axiom-font);
-    }
-    .footer a {
-      color: var(--axiom-accent);
-      text-decoration: none;
-      transition: text-shadow 0.2s;
-    }
-    .footer a:hover {
-      text-decoration: underline;
-      text-shadow: 0 0 15px var(--axiom-glow);
-    }
-
-    .toast {
-      position: fixed;
-      bottom: 28px;
-      left: 50%;
-      transform: translateX(-50%) translateY(16px);
-      padding: 12px 24px;
-      background: var(--axiom-surface);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--axiom-accent);
-      border-radius: var(--axiom-radius);
-      font-family: var(--axiom-font);
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--axiom-accent);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s, transform 0.25s;
-      z-index: 100;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    }
-    .toast.visible {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    .loader-block {
-      opacity: 0;
-      transform: translateY(12px);
-      transition: opacity 0.5s ease 0.1s, transform 0.5s ease 0.1s, box-shadow 0.3s, border-color 0.3s;
-    }
-    .loader-block.in-view {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    .hero-title {
-      opacity: 0;
-      transform: translateY(14px);
-      transition: opacity 0.5s ease, transform 0.5s ease;
-    }
-    .hero-title.in-view { opacity: 1; transform: translateY(0); }
-    .hero-desc {
-      opacity: 0;
-      transform: translateY(10px);
-      transition: opacity 0.5s ease 0.06s, transform 0.5s ease 0.06s;
-    }
-    .hero-desc.in-view { opacity: 1; transform: translateY(0); }
-
-    .bg-mesh {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: -2;
-      background:
-        radial-gradient(ellipse 100% 80% at 50% -30%, rgba(88, 80, 180, 0.35) 0%, transparent 50%),
-        radial-gradient(ellipse 80% 60% at 80% 50%, rgba(107, 140, 255, 0.2) 0%, transparent 45%),
-        radial-gradient(ellipse 60% 80% at 20% 80%, rgba(120, 80, 160, 0.25) 0%, transparent 45%),
-        var(--axiom-bg);
-    }
-    .bg-grid {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: -1;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-      background-size: 48px 48px;
-      opacity: 0.8;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .page-loader-bars span { animation: none; }
-      .page-loader-logo { animation: none; }
-      .hero-title, .hero-desc, .section-title, .section-desc,
-      .why-card, .faq-item, .game-card, .loader-block {
-        opacity: 1;
-        transform: none;
-        transition: none;
-      }
-      .hero-title.in-view, .hero-desc.in-view, .section-title.in-view,
-      .section-desc.in-view, .why-card.in-view, .faq-item.in-view,
-      .game-card.in-view, .loader-block.in-view { opacity: 1; transform: none; }
-    }
+    .page { max-width: 720px; margin: 0 auto; padding: 24px 20px 48px; font-family: var(--axiom-font); }
+    .page h1 { font-size: 1.5rem; margin: 0 0 8px 0; color: var(--axiom-text); }
+    .page p.lead { color: var(--axiom-muted); font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+    .nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; max-width: 720px; margin: 0 auto; }
+    .nav-logo { font-size: 18px; font-weight: 700; color: var(--axiom-text); text-decoration: none; }
+    .nav-logo:hover { color: var(--axiom-accent); }
+    .nav-link { font-size: 13px; color: var(--axiom-muted); text-decoration: none; }
+    .nav-link:hover { color: var(--axiom-accent); }
+    .card { background: var(--axiom-surface); border: 1px solid var(--axiom-border); border-radius: var(--axiom-radius-lg); padding: 20px; margin-bottom: 16px; }
+    .card h2 { font-size: 14px; font-weight: 700; margin: 0 0 14px 0; color: var(--axiom-accent); cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+    .card h2::after { content: "−"; color: var(--axiom-muted); }
+    .card.collapsed h2::after { content: "+"; }
+    .card.collapsed .card-body { display: none; }
+    .card-body { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px 20px; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label { font-size: 12px; color: var(--axiom-muted); }
+    .field input[type="number"], .field input[type="text"], .field select { padding: 8px 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--axiom-border); border-radius: 6px; color: var(--axiom-text); font-family: inherit; font-size: 13px; }
+    .field input[type="color"] { width: 100%; height: 32px; padding: 2px; border: 1px solid var(--axiom-border); border-radius: 6px; cursor: pointer; background: transparent; }
+    .field input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--axiom-accent); cursor: pointer; }
+    .field.row { flex-direction: row; align-items: center; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 24px; }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px); padding: 10px 20px; background: var(--axiom-surface); border: 1px solid var(--axiom-accent); border-radius: var(--axiom-radius); font-size: 13px; color: var(--axiom-accent); opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .load-wrap { margin-bottom: 20px; }
+    .load-wrap textarea { width: 100%; min-height: 80px; padding: 12px; background: rgba(0,0,0,0.35); border: 1px solid var(--axiom-border); border-radius: var(--axiom-radius); color: var(--axiom-muted); font-family: ui-monospace, monospace; font-size: 12px; resize: vertical; }
+    .bg-mesh { position: fixed; inset: 0; pointer-events: none; z-index: -2; background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(88, 80, 180, 0.25) 0%, transparent 50%), var(--axiom-bg); }
   </style>
 </head>
 <body>
-  <div class="page-loader" id="pageLoader" aria-hidden="true">
-    <div class="page-loader-logo">Axiom</div>
-    <div class="page-loader-bars">
-      <span></span><span></span><span></span><span></span><span></span>
-    </div>
-    <span class="page-loader-text">Loading</span>
-  </div>
-
-  <div class="bg-mesh" aria-hidden="true"></div>
-  <div class="bg-grid" aria-hidden="true"></div>
-
-  <nav class="nav" aria-label="Main">
+  <div class="bg-mesh"></div>
+  <nav class="nav">
     <a href="#" class="nav-logo">Axiom.win</a>
     <a href="https://github.com/itssor/axiom.winv2/tree/main/scripts" target="_blank" rel="noopener" class="nav-link">GitHub</a>
   </nav>
+  <main class="page">
+    <h1>Config generator</h1>
+    <p class="lead">Build your Axiom config here and copy the JSON. In-game: Config tab → Import → paste the JSON.</p>
 
-  <div class="tabs-wrap">
-    <div class="tabs" role="tablist" aria-label="Sections">
-      <button type="button" role="tab" id="tab-loader" aria-selected="true" aria-controls="panel-loader" class="active">Loader</button>
-      <button type="button" role="tab" id="tab-about" aria-selected="false" aria-controls="panel-about">About</button>
-      <button type="button" role="tab" id="tab-faq" aria-selected="false" aria-controls="panel-faq">FAQ</button>
-      <button type="button" role="tab" id="tab-games" aria-selected="false" aria-controls="panel-games">Games</button>
+    <div class="load-wrap card">
+      <h2>Import existing config (optional)</h2>
+      <div class="card-body">
+        <div class="field" style="grid-column: 1 / -1;">
+          <label>Paste JSON from in-game Export, then click Load below</label>
+          <textarea id="importJson" placeholder='{"Aimbot":{...}, ...}'></textarea>
+        </div>
+        <button type="button" class="axiom-btn axiom-btn-ghost" id="btnLoad">Load into form</button>
+      </div>
     </div>
-  </div>
 
-  <main class="tab-content">
-    <section class="tab-panel active" id="panel-loader" role="tabpanel" aria-labelledby="tab-loader">
-      <h1 class="hero-title">Axiom.win</h1>
-      <p class="hero-desc">One loader. Copy the code below into your executor and run it. We support multiple games — the loader loads the right script for the game you're in. Free, no key, no signup.</p>
-      <div class="loader-block">
-        <div class="loader-code-wrap">
-          <pre class="loader-code" id="loaderCode"></pre>
-        </div>
-        <div class="loader-cta">
-          <button type="button" class="copy-btn" id="copyBtnLoader" aria-label="Copy loader">Copy loader</button>
-        </div>
-      </div>
-    </section>
+    <div id="sections"></div>
 
-    <section class="tab-panel" id="panel-about" role="tabpanel" aria-labelledby="tab-about" hidden>
-      <h2 class="section-title">About</h2>
-      <p class="section-desc">Axiom is a Roblox script loader. You run one line in your executor; it loads the right script from GitHub for the game you're in. Everything is open source. No obfuscation, no key system.</p>
-      <div class="why-grid">
-        <div class="why-card">
-          <h3>One loader</h3>
-          <p>Same line everywhere. It loads the right script for the game you're in from GitHub.</p>
-        </div>
-        <div class="why-card">
-          <h3>Open source</h3>
-          <p>Everything's on GitHub. Paste and run. No key, no account.</p>
-        </div>
-        <div class="why-card">
-          <h3>Multiple games</h3>
-          <p>We support multiple games. The loader picks the right script for where you are.</p>
-        </div>
-      </div>
-      <p class="section-desc" style="margin-top: 24px;">Copy the loader from the Loader tab, paste it into your executor, and run. The UI shows up in-game.</p>
-    </section>
-
-    <section class="tab-panel" id="panel-faq" role="tabpanel" aria-labelledby="tab-faq" hidden>
-      <h2 class="section-title">FAQ</h2>
-      <p class="section-desc">Quick answers.</p>
-      <div class="faq-list">
-        <details class="faq-item">
-          <summary>What is Axiom?</summary>
-          <p>A Roblox script loader. You paste one line; it grabs the right script from GitHub for the game you're in and runs it.</p>
-        </details>
-        <details class="faq-item">
-          <summary>Which games are supported?</summary>
-          <p>We support multiple games. The loader loads the right script for the game you're in.</p>
-        </details>
-        <details class="faq-item">
-          <summary>How do I use it?</summary>
-          <p>Copy the loader from the Loader tab, paste it into your executor, and run. The UI loads in-game.</p>
-        </details>
-        <details class="faq-item">
-          <summary>What executors work?</summary>
-          <p>Anything that supports loadstring and HttpGet. Paste and run.</p>
-        </details>
-      </div>
-    </section>
-
-    <section class="tab-panel" id="panel-games" role="tabpanel" aria-labelledby="tab-games" hidden>
-      <h2 class="section-title">Supported games</h2>
-      <p class="section-desc">We support multiple games with dedicated builds and thumbnails. Below: supported titles and a universal build for everything else.</p>
-      <div class="games-grid" id="gamesGrid"></div>
-    </section>
+    <div class="actions">
+      <button type="button" class="axiom-btn" id="btnCopy">Copy JSON</button>
+      <button type="button" class="axiom-btn axiom-btn-ghost" id="btnReset">Reset to defaults</button>
+    </div>
   </main>
+  <div class="toast" id="toast">Copied</div>
 
-  <footer class="footer">
-    <a href="https://github.com/itssor/axiom.winv2/tree/main/scripts" target="_blank" rel="noopener">GitHub</a>
-  </footer>
-
-  <div class="toast" id="toast" role="status">Copied</div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script>
-    (function() {
-      var GITHUB_RAW = "https://raw.githubusercontent.com/itssor/axiom.winv2/main/scripts/core.lua";
-      var loaderCode = "loadstring(game:HttpGet(\"" + GITHUB_RAW + "\"))()";
-      var TAB_SWOOSH_DURATION = 2.5;
+(function() {
+  function hexToRgb(hex) {
+    var m = hex.replace(/^#/, "").match(/^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+    if (!m) return { r: 1, g: 1, b: 1 };
+    return { r: parseInt(m[1], 16) / 255, g: parseInt(m[2], 16) / 255, b: parseInt(m[3], 16) / 255 };
+  }
+  function rgbToHex(r, g, b) {
+    r = Math.round((r != null ? r : 1) * 255); g = Math.round((g != null ? g : 1) * 255); b = Math.round((b != null ? b : 1) * 255);
+    return "#" + [r, g, b].map(function(x) { var s = x.toString(16); return s.length === 1 ? "0" + s : s; }).join("");
+  }
 
-      document.getElementById("loaderCode").textContent = loaderCode;
+  var KEY_OPTS = [
+    "Enum.KeyCode.V", "Enum.KeyCode.F", "Enum.KeyCode.C", "Enum.KeyCode.X", "Enum.KeyCode.Z",
+    "Enum.KeyCode.Q", "Enum.KeyCode.E", "Enum.KeyCode.R", "Enum.KeyCode.T", "Enum.KeyCode.G",
+    "Enum.KeyCode.LeftShift", "Enum.KeyCode.RightShift", "Enum.KeyCode.LeftControl", "Enum.KeyCode.Space",
+    "Enum.KeyCode.One", "Enum.KeyCode.Two", "Enum.KeyCode.Three", "Enum.KeyCode.Four", "Enum.KeyCode.Five",
+    "Enum.UserInputType.MouseButton2", "Enum.UserInputType.MouseButton1",
+    "Enum.KeyCode.Unknown"
+  ];
+  var KEY_LABELS = { "Enum.UserInputType.MouseButton2": "Right Click", "Enum.UserInputType.MouseButton1": "Left Click", "Enum.KeyCode.Unknown": "None" };
 
-      var pageLoader = document.getElementById("pageLoader");
-      function hidePageLoader() {
-        pageLoader.classList.add("done");
+  function defaultConfig() {
+    return {
+      Aimbot: { Enabled: false, FOVCircle: false, FOV: 100, FOVFilled: false, FOVColor: { r: 1, g: 1, b: 1 }, FOVThickness: 1, SnapLines: false, TargetPart: "Head", Key: "Enum.UserInputType.MouseButton2", Mode: "Hold", WallCheck: false, TeamCheck: false, Smoothness: 5, Prioritization: "Closest Crosshair", TargetHUD: true, VisualBT: false, Method: "Mouse", SnapLineColor: { r: 1, g: 1, b: 1 }, SnapLineThickness: 1 },
+      Visuals: { Enabled: false, TeamCheck: false, DistanceLimit: 1000, TextSize: 13, InfoPosition: "Top", HealthMode: "Text", HealthBarSide: "Left", Box2D: false, Box2DColor: { r: 1, g: 1, b: 1 }, Box2DTransparency: 1, Box3D: false, Box3DColor: { r: 1, g: 1, b: 1 }, Box3DTransparency: 1, Skeleton: false, SkeletonColor: { r: 1, g: 1, b: 1 }, SkeletonTransparency: 1, Tracer: false, TracerColor: { r: 1, g: 1, b: 1 }, TracerTransparency: 1, TracerOrigin: "Bottom", HeadDot: false, HeadDotColor: { r: 1, g: 1, b: 1 }, HeadDotTransparency: 1, HeadDotRadius: 3, Name: false, DisplayName: false, Distance: false, Health: false, ToolText: false, TextColor: { r: 1, g: 1, b: 1 }, TextTransparency: 1, Chams: false, ChamsColor: { r: 0, g: 0.48, b: 1 }, ChamsTransparency: 0.5, ChamsMethod: "Highlight", ToolChams: false, ToolColor: { r: 1, g: 1, b: 1 }, ToolTransparency: 0.5, OffscreenArrows: false, OffscreenArrowColor: { r: 1, g: 1, b: 1 }, OffscreenArrowSize: 16, OffscreenArrowTransparency: 1, CenterDot: false, CenterDotColor: { r: 1, g: 1, b: 1 }, CenterDotRadius: 2, Outline: true, OutlineColor: { r: 0, g: 0, b: 0 }, OutlineThickness: 1, SkeletonSmooth: false, SkeletonSmoothSpeed: 0.2, Box2DUseGradient: false, Box2DGradientColor: { r: 0.78, g: 0.78, b: 0.78 }, Box3DUseGradient: false, Box3DGradientColor: { r: 0.78, g: 0.78, b: 0.78 }, SkeletonUseGradient: false, SkeletonGradientColor: { r: 0.78, g: 0.78, b: 0.78 }, TracerUseGradient: false, TracerGradientColor: { r: 0.78, g: 0.78, b: 0.78 }, HeadDotUseGradient: false, HeadDotGradientColor: { r: 0.78, g: 0.78, b: 0.78 }, TextUseGradient: false, TextGradientColor: { r: 0.78, g: 0.78, b: 0.78 }, ChamsUseGradient: false, ChamsGradientColor: { r: 0.4, g: 0.7, b: 1 }, CenterDotUseGradient: false, CenterDotGradientColor: { r: 0.78, g: 0.78, b: 0.78 }, OffscreenArrowUseGradient: false, OffscreenArrowGradientColor: { r: 0.78, g: 0.78, b: 0.78 } },
+      Crosshair: { Enabled: true, Style: "cross", Length: 8, Thickness: 1, DotMode: false, Color: { r: 1, g: 1, b: 1 }, UseGradient: false, GradientColor: { r: 0.78, g: 0.78, b: 0.78 }, Outline: true, OutlineColor: { r: 0, g: 0, b: 0 }, OutlineThickness: 1, Spin: false, SpinSpeed: 90, ShowAxiomText: true, AxiomTextColor: { r: 1, g: 1, b: 1 }, AxiomTextUseGradient: false, AxiomTextGradientColor: { r: 0.78, g: 0.78, b: 0.78 } },
+      Hitbox: { Enabled: false, ExpandSize: 1.6, Transparency: 0.6, Color: { r: 1, g: 0, b: 0 }, OutlineColor: { r: 1, g: 1, b: 1 }, ShowOutline: true, Head: true, Torso: true },
+      Movement: { SpeedEnabled: false, SpeedValue: 16, SpeedKey: "Enum.KeyCode.V", SpeedMode: "Toggle", SpeedMethod: "CFrame", FlyEnabled: false, FlySpeed: 50, FlyKey: "Enum.KeyCode.F", FlyMode: "Toggle", FlyMethod: "Velocity", Noclip: false, InfJump: false, FreecamEnabled: false, FreecamSpeed: 1, FreecamKey: "Enum.KeyCode.Unknown", FreecamMode: "Toggle", FreecamSmoothness: 0.25, FreecamFreeCursor: true, Bhop: false, TPWalk: false, TPStep: 3, TPRate: 0.05, Spinbot: false, SpinSpeed: 360 },
+      Misc: { FullBright: false, ZoomEnabled: false, ZoomKey: "Enum.KeyCode.Z", ZoomMethod: "FOV", ZoomAmount: 30, ZoomMode: "Toggle", StreamerMode: false, SpoofName: "Anonymous", MySpoofName: "Anonymous", NotificationMethod: "Window Alert", NotificationPosition: "TopRight", NotificationDuration: 3, NotificationAnimate: true, NotificationSound: "tf2 menu", NotificationVolume: 1, WatermarkEnabled: true, WatermarkPosition: "TopLeft", UIPreset: "Default", ProximityPromptInstant: false, FOVEnabled: false, FOV: 90, DarkMode: true, AmbientEnabled: false, AmbientColor: { r: 1, g: 1, b: 1 }, SkyboxEnabled: false, SkyboxID: "142283166" },
+      MM2: { SilentAimEnabled: false, SilentAimKey: "Enum.KeyCode.X", SilentAimMode: "Hold", KillAllEnabled: false, KillAllKey: "Enum.KeyCode.C", KillAllMode: "Hold", GunESP: false, MurdererESP: true, SheriffESP: true, RoleESP: true, GunESPColor: { r: 0, g: 1, b: 0 }, MurdererESPColor: { r: 1, g: 0, b: 0 }, SheriffESPColor: { r: 0, g: 0.4, b: 1 }, InnocentESPColor: { r: 0.78, g: 0.78, b: 0.78 }, TpToGun: false, AutoGunGrab: false, TpToMurderer: false, TpToSheriff: false, AutoFarmCoins: false }
+    };
+  }
+
+  function deepClone(o) {
+    if (o === null || typeof o !== "object") return o;
+    if (typeof o.r === "number" && typeof o.g === "number" && typeof o.b === "number" && !o._t) return { r: o.r, g: o.g, b: o.b };
+    var out = Array.isArray(o) ? [] : {};
+    for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) out[k] = deepClone(o[k]);
+    return out;
+  }
+
+  function toSerializable(obj) {
+    if (obj === null || typeof obj !== "object") return obj;
+    if (typeof obj.r === "number" && typeof obj.g === "number" && typeof obj.b === "number" && obj._t === undefined) return { _t: "C", r: obj.r, g: obj.g, b: obj.b };
+    if (typeof obj === "string" && obj.indexOf("Enum.") === 0) return { _t: "E", s: obj };
+    var out = Array.isArray(obj) ? [] : {};
+    for (var k in obj) if (Object.prototype.hasOwnProperty.call(obj, k)) out[k] = toSerializable(obj[k]);
+    return out;
+  }
+
+  function reviveIncoming(obj) {
+    if (obj === null || typeof obj !== "object") return obj;
+    if (obj._t === "C" && typeof obj.r === "number") return { r: obj.r, g: obj.g, b: obj.b };
+    if (obj._t === "E" && typeof obj.s === "string") return obj.s;
+    if (typeof obj.R === "number" && typeof obj.G === "number" && typeof obj.B === "number") return { r: obj.R / 255, g: obj.G / 255, b: obj.B / 255 };
+    if (typeof obj.r === "number" && typeof obj.g === "number" && typeof obj.b === "number" && !obj._t) return { r: obj.r, g: obj.g, b: obj.b };
+    var out = Array.isArray(obj) ? [] : {};
+    for (var k in obj) if (Object.prototype.hasOwnProperty.call(obj, k)) out[k] = reviveIncoming(obj[k]);
+    return out;
+  }
+
+  function mergeInto(target, source) {
+    for (var k in source) {
+      if (Object.prototype.hasOwnProperty.call(source, k)) {
+        var s = source[k], t = target[k];
+        if (s && typeof s === "object" && !Array.isArray(s) && typeof s.r !== "number" && t && typeof t === "object") mergeInto(t, s);
+        else target[k] = deepClone(s);
       }
-      if (document.readyState === "complete") {
-        setTimeout(hidePageLoader, 400);
-      } else {
-        window.addEventListener("load", function() { setTimeout(hidePageLoader, 400); });
-      }
+    }
+  }
 
-      var toast = document.getElementById("toast");
-      function showToast() {
-        toast.textContent = "Copied";
-        toast.classList.add("visible");
-        setTimeout(function() { toast.classList.remove("visible"); }, 2200);
-      }
-      function copyLoader() {
-        if (navigator.clipboard && window.isSecureContext) {
-          navigator.clipboard.writeText(loaderCode).then(showToast).catch(function() {
-            fallbackCopy();
-          });
-        } else {
-          fallbackCopy();
-        }
-      }
-      function fallbackCopy() {
-          var ta = document.createElement("textarea");
-          ta.value = loaderCode;
-          ta.style.position = "fixed";
-          ta.style.opacity = "0";
-          document.body.appendChild(ta);
-          ta.select();
-          try {
-            document.execCommand("copy");
-            showToast();
-          } catch (e) {}
-          document.body.removeChild(ta);
-      }
-      document.getElementById("copyBtnLoader").addEventListener("click", copyLoader);
+  var state = defaultConfig();
 
-      var tabs = document.querySelectorAll(".tabs button");
-      var panels = document.querySelectorAll(".tab-panel");
-      var contentEl = document.querySelector(".tab-content");
+  function bindNumber(section, key, inputId) {
+    var el = document.getElementById(inputId);
+    if (!el) return;
+    var v = state[section][key];
+    el.value = v;
+    el.addEventListener("input", function() { state[section][key] = parseFloat(el.value) || 0; });
+  }
+  function bindCheck(section, key, inputId) {
+    var el = document.getElementById(inputId);
+    if (!el) return;
+    el.checked = state[section][key];
+    el.addEventListener("change", function() { state[section][key] = el.checked; });
+  }
+  function bindSelect(section, key, inputId, options) {
+    var el = document.getElementById(inputId);
+    if (!el) return;
+    var v = state[section][key];
+    var idx = options.indexOf(v);
+    if (idx >= 0) el.value = idx; else el.value = 0;
+    el.addEventListener("change", function() { state[section][key] = options[parseInt(el.value, 10)]; });
+  }
+  function bindKey(section, key, inputId) {
+    var el = document.getElementById(inputId);
+    if (!el) return;
+    var v = state[section][key];
+    var idx = KEY_OPTS.indexOf(v);
+    if (idx >= 0) el.value = idx; else el.value = KEY_OPTS.length - 1;
+    el.addEventListener("change", function() { state[section][key] = KEY_OPTS[parseInt(el.value, 10)]; });
+  }
+  function bindColor(section, key, inputId) {
+    var el = document.getElementById(inputId);
+    if (!el) return;
+    var c = state[section][key];
+    el.value = rgbToHex(c.r, c.g, c.b);
+    el.addEventListener("input", function() { state[section][key] = hexToRgb(el.value); });
+  }
 
-      function switchTab(toIndex) {
-        var fromIndex = -1;
-        for (var i = 0; i < panels.length; i++) {
-          if (panels[i].classList.contains("active")) fromIndex = i;
-        }
-        if (fromIndex < 0) fromIndex = 0;
-        if (fromIndex === toIndex) return;
+  function addField(parent, type, label, id, section, key, opts) {
+    var wrap = document.createElement("div");
+    wrap.className = "field" + (type === "checkbox" ? " row" : "");
+    var lab = document.createElement("label");
+    lab.htmlFor = id;
+    lab.textContent = label;
+    wrap.appendChild(lab);
+    var el;
+    if (type === "checkbox") {
+      el = document.createElement("input");
+      el.type = "checkbox";
+      el.id = id;
+      el.checked = state[section][key];
+      el.dataset.section = section;
+      el.dataset.key = key;
+      el.addEventListener("change", function() { state[section][key] = el.checked; });
+    } else if (type === "number") {
+      el = document.createElement("input");
+      el.type = "number";
+      el.id = id;
+      el.value = state[section][key];
+      el.min = opts && opts.min != null ? opts.min : "";
+      el.max = opts && opts.max != null ? opts.max : "";
+      el.dataset.section = section;
+      el.dataset.key = key;
+      el.addEventListener("input", function() { state[section][key] = parseFloat(el.value) || 0; });
+    } else if (type === "select") {
+      el = document.createElement("select");
+      el.id = id;
+      el.dataset.section = section;
+      el.dataset.key = key;
+      el.dataset.options = (opts && opts.options ? opts.options : []).join("\n");
+      var options = opts && opts.options ? opts.options : [];
+      options.forEach(function(o, i) { var opt = document.createElement("option"); opt.value = i; opt.textContent = o; el.appendChild(opt); });
+      var cur = state[section][key];
+      var idx = options.indexOf(cur);
+      el.value = idx >= 0 ? idx : 0;
+      el.addEventListener("change", function() { state[section][key] = options[parseInt(el.value, 10)]; });
+    } else if (type === "key") {
+      el = document.createElement("select");
+      el.id = id;
+      el.dataset.section = section;
+      el.dataset.key = key;
+      el.dataset.keySelect = "1";
+      KEY_OPTS.forEach(function(o, i) { var opt = document.createElement("option"); opt.value = i; opt.textContent = KEY_LABELS[o] || o.replace("Enum.KeyCode.", "").replace("Enum.UserInputType.", ""); el.appendChild(opt); });
+      var idx = KEY_OPTS.indexOf(state[section][key]);
+      el.value = idx >= 0 ? idx : KEY_OPTS.length - 1;
+      el.addEventListener("change", function() { state[section][key] = KEY_OPTS[parseInt(el.value, 10)]; });
+    } else if (type === "color") {
+      el = document.createElement("input");
+      el.type = "color";
+      el.id = id;
+      el.dataset.section = section;
+      el.dataset.key = key;
+      var c = state[section][key];
+      el.value = rgbToHex(c.r, c.g, c.b);
+      el.addEventListener("input", function() { state[section][key] = hexToRgb(el.value); });
+    } else {
+      el = document.createElement("input");
+      el.type = "text";
+      el.id = id;
+      el.value = state[section][key];
+      el.dataset.section = section;
+      el.dataset.key = key;
+      el.addEventListener("input", function() { state[section][key] = el.value; });
+    }
+    wrap.appendChild(el);
+    parent.appendChild(wrap);
+  }
 
-        var fromPanel = panels[fromIndex];
-        var toPanel = panels[toIndex];
-        var dir = toIndex > fromIndex ? 1 : -1;
+  function syncFormFromState() {
+    document.querySelectorAll("[data-section][data-key]").forEach(function(el) {
+      var s = el.dataset.section, k = el.dataset.key;
+      if (!state[s] || state[s][k] === undefined) return;
+      var v = state[s][k];
+      if (el.type === "checkbox") el.checked = !!v;
+      else if (el.type === "number") el.value = v;
+      else if (el.type === "color" && v && typeof v.r === "number") el.value = rgbToHex(v.r, v.g, v.b);
+      else if (el.dataset.keySelect === "1") { var idx = KEY_OPTS.indexOf(v); el.value = idx >= 0 ? idx : KEY_OPTS.length - 1; }
+      else if (el.dataset.options) { var opts = el.dataset.options.split("\n"); var idx = opts.indexOf(v); el.value = idx >= 0 ? idx : 0; }
+    });
+  }
 
-        tabs[fromIndex].setAttribute("aria-selected", "false");
-        tabs[toIndex].setAttribute("aria-selected", "true");
-        tabs[fromIndex].classList.remove("active");
-        tabs[toIndex].classList.add("active");
+  function renderSection(title, sectionKey, fields) {
+    var card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = "<h2>" + title + "</h2><div class=\"card-body\"></div>";
+    var body = card.querySelector(".card-body");
+    fields.forEach(function(f) { addField(body, f.type, f.label, f.id, sectionKey, f.key, f.opts); });
+    card.querySelector("h2").addEventListener("click", function() { card.classList.toggle("collapsed"); });
+    document.getElementById("sections").appendChild(card);
+  }
 
-        fromPanel.removeAttribute("hidden");
-        toPanel.removeAttribute("hidden");
+  renderSection("Aimbot", "Aimbot", [
+    { type: "checkbox", label: "Enabled", id: "aim_enabled", key: "Enabled" },
+    { type: "checkbox", label: "FOV Circle", id: "aim_fovcircle", key: "FOVCircle" },
+    { type: "number", label: "FOV", id: "aim_fov", key: "FOV", opts: { min: 20, max: 360 } },
+    { type: "checkbox", label: "FOV Filled", id: "aim_fovfilled", key: "FOVFilled" },
+    { type: "color", label: "FOV Color", id: "aim_fovcolor", key: "FOVColor" },
+    { type: "key", label: "Key", id: "aim_key", key: "Key" },
+    { type: "select", label: "Mode", id: "aim_mode", key: "Mode", opts: { options: ["Hold", "Toggle", "Always On"] } },
+    { type: "number", label: "Smoothness", id: "aim_smooth", key: "Smoothness", opts: { min: 1, max: 20 } },
+    { type: "select", label: "Target Part", id: "aim_part", key: "TargetPart", opts: { options: ["Head", "UpperTorso", "HumanoidRootPart"] } }
+  ]);
+  renderSection("Visuals", "Visuals", [
+    { type: "checkbox", label: "ESP Enabled", id: "vis_enabled", key: "Enabled" },
+    { type: "checkbox", label: "2D Box", id: "vis_box2d", key: "Box2D" },
+    { type: "checkbox", label: "3D Box", id: "vis_box3d", key: "Box3D" },
+    { type: "checkbox", label: "Skeleton", id: "vis_skel", key: "Skeleton" },
+    { type: "checkbox", label: "Tracer", id: "vis_tracer", key: "Tracer" },
+    { type: "checkbox", label: "Head Dot", id: "vis_headdot", key: "HeadDot" },
+    { type: "checkbox", label: "Outline", id: "vis_outline", key: "Outline" },
+    { type: "color", label: "Outline Color", id: "vis_outlinecolor", key: "OutlineColor" },
+    { type: "color", label: "Text Color", id: "vis_textcolor", key: "TextColor" },
+    { type: "number", label: "Text Size", id: "vis_textsize", key: "TextSize", opts: { min: 8, max: 32 } },
+    { type: "number", label: "Distance Limit", id: "vis_dist", key: "DistanceLimit", opts: { min: 100, max: 5000 } }
+  ]);
+  renderSection("Crosshair", "Crosshair", [
+    { type: "checkbox", label: "Enabled", id: "ch_enabled", key: "Enabled" },
+    { type: "select", label: "Style", id: "ch_style", key: "Style", opts: { options: ["dot", "line", "cross"] } },
+    { type: "number", label: "Length", id: "ch_length", key: "Length", opts: { min: 1, max: 32 } },
+    { type: "number", label: "Thickness", id: "ch_thick", key: "Thickness", opts: { min: 1, max: 4 } },
+    { type: "checkbox", label: "Dot Mode", id: "ch_dot", key: "DotMode" },
+    { type: "color", label: "Color", id: "ch_color", key: "Color" },
+    { type: "checkbox", label: "Outline", id: "ch_outline", key: "Outline" },
+    { type: "checkbox", label: "Spin", id: "ch_spin", key: "Spin" },
+    { type: "number", label: "Spin Speed", id: "ch_spinspeed", key: "SpinSpeed", opts: { min: 0, max: 360 } },
+    { type: "checkbox", label: "Show axiom.win text", id: "ch_text", key: "ShowAxiomText" }
+  ]);
+  renderSection("Movement", "Movement", [
+    { type: "checkbox", label: "Speed", id: "mov_speed", key: "SpeedEnabled" },
+    { type: "number", label: "Speed Value", id: "mov_speedval", key: "SpeedValue", opts: { min: 1, max: 200 } },
+    { type: "key", label: "Speed Key", id: "mov_speedkey", key: "SpeedKey" },
+    { type: "checkbox", label: "Fly", id: "mov_fly", key: "FlyEnabled" },
+    { type: "number", label: "Fly Speed", id: "mov_flyspeed", key: "FlySpeed", opts: { min: 10, max: 500 } },
+    { type: "key", label: "Fly Key", id: "mov_flykey", key: "FlyKey" },
+    { type: "checkbox", label: "Noclip", id: "mov_noclip", key: "Noclip" },
+    { type: "checkbox", label: "Infinite Jump", id: "mov_infjump", key: "InfJump" },
+    { type: "key", label: "Freecam Key", id: "mov_freecamkey", key: "FreecamKey" }
+  ]);
+  renderSection("Misc", "Misc", [
+    { type: "checkbox", label: "FullBright", id: "misc_fb", key: "FullBright" },
+    { type: "checkbox", label: "Zoom", id: "misc_zoom", key: "ZoomEnabled" },
+    { type: "key", label: "Zoom Key", id: "misc_zoomkey", key: "ZoomKey" },
+    { type: "number", label: "Zoom Amount", id: "misc_zoomamt", key: "ZoomAmount", opts: { min: 5, max: 120 } },
+    { type: "checkbox", label: "Streamer Mode", id: "misc_streamer", key: "StreamerMode" },
+    { type: "checkbox", label: "Watermark", id: "misc_wm", key: "WatermarkEnabled" },
+    { type: "number", label: "Notification Duration", id: "misc_notifdur", key: "NotificationDuration", opts: { min: 0.25, max: 30 } }
+  ]);
+  renderSection("Hitbox", "Hitbox", [
+    { type: "checkbox", label: "Enabled", id: "hb_enabled", key: "Enabled" },
+    { type: "number", label: "Expand Size", id: "hb_expand", key: "ExpandSize", opts: { min: 1, max: 3 } },
+    { type: "color", label: "Color", id: "hb_color", key: "Color" }
+  ]);
+  renderSection("MM2", "MM2", [
+    { type: "checkbox", label: "Silent Aim", id: "mm2_silent", key: "SilentAimEnabled" },
+    { type: "key", label: "Silent Aim Key", id: "mm2_silentkey", key: "SilentAimKey" },
+    { type: "checkbox", label: "Kill All", id: "mm2_killall", key: "KillAllEnabled" },
+    { type: "key", label: "Kill All Key", id: "mm2_killallkey", key: "KillAllKey" },
+    { type: "checkbox", label: "Gun ESP", id: "mm2_gunesp", key: "GunESP" },
+    { type: "checkbox", label: "Murderer ESP", id: "mm2_murderer", key: "MurdererESP" },
+    { type: "checkbox", label: "Sheriff ESP", id: "mm2_sheriff", key: "SheriffESP" }
+  ]);
 
-        if (typeof gsap !== "undefined" && gsap.to) {
-          gsap.killTweensOf([fromPanel, toPanel]);
-          fromPanel.style.position = "absolute";
-          fromPanel.style.left = "0";
-          fromPanel.style.right = "0";
-          fromPanel.style.top = "0";
-          gsap.set(toPanel, { scale: 1.08, opacity: 0, filter: "blur(10px)" });
-          toPanel.style.position = "absolute";
-          toPanel.style.left = "0";
-          toPanel.style.right = "0";
-          toPanel.style.top = "0";
-          toPanel.removeAttribute("hidden");
-          var tl = gsap.timeline();
-          tl.to(fromPanel, { scale: 0.96, opacity: 0, filter: "blur(8px)", duration: TAB_SWOOSH_DURATION, ease: "power2.in" }, 0);
-          tl.to(toPanel, { scale: 1, opacity: 1, filter: "blur(0px)", duration: TAB_SWOOSH_DURATION, ease: "power2.out" }, 0);
-          tl.add(function() {
-            fromPanel.classList.remove("active");
-            fromPanel.setAttribute("hidden", "");
-            fromPanel.style.position = "";
-            fromPanel.style.left = "";
-            fromPanel.style.right = "";
-            fromPanel.style.top = "";
-            gsap.set(fromPanel, { clearProps: "all" });
-            toPanel.classList.add("active");
-            toPanel.style.position = "";
-            toPanel.style.left = "";
-            toPanel.style.right = "";
-            toPanel.style.top = "";
-            gsap.set(toPanel, { clearProps: "all" });
-          }, TAB_SWOOSH_DURATION);
-        } else {
-          fromPanel.classList.remove("active");
-          fromPanel.setAttribute("hidden", "");
-          toPanel.classList.add("active");
-          toPanel.style.opacity = "";
-          toPanel.style.transform = "";
-        }
-      }
+  function getExportJson() {
+    return JSON.stringify(toSerializable(deepClone(state)), null, 2);
+  }
 
-      for (var t = 0; t < tabs.length; t++) {
-        (function(i) {
-          tabs[i].addEventListener("click", function() { switchTab(i); });
-        })(t);
-      }
+  var toast = document.getElementById("toast");
+  function showToast(msg) {
+    toast.textContent = msg || "Copied";
+    toast.classList.add("visible");
+    setTimeout(function() { toast.classList.remove("visible"); }, 2200);
+  }
 
-      var grid = document.getElementById("gamesGrid");
-      var canFetch = (typeof location !== "undefined" && (location.protocol === "http:" || location.protocol === "https:"));
-      var MM2_PLACE_ID = 142823291;
-      var fallbackGames = [
-        { placeId: MM2_PLACE_ID, name: "Murder Mystery 2", thumbUrl: null },
-        { placeId: "universal", name: "Universal", thumbUrl: "https://img.icons8.com/ios-filled/512/6b8cff/globe--v1.png" }
-      ];
+  document.getElementById("btnCopy").addEventListener("click", function() {
+    var json = getExportJson();
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(json).then(function() { showToast("Copied"); }).catch(function() {
+        var ta = document.createElement("textarea"); ta.value = json; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); showToast("Copied"); } catch (e) {}
+        document.body.removeChild(ta);
+      });
+    } else {
+      var ta = document.createElement("textarea"); ta.value = json; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); showToast("Copied"); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+  });
 
-      function fetchMm2Thumb(cb) {
-        if (!canFetch) return cb();
-        fetch("https://thumbnails.roblox.com/v1/places/gameicons?placeIds=" + MM2_PLACE_ID + "&size=512x512&format=Png&isCircular=false")
-          .then(function(r) { return r.json(); })
-          .then(function(data) {
-            if (data && data.data && data.data[0] && data.data[0].imageUrl) {
-              fallbackGames[0].thumbUrl = data.data[0].imageUrl;
-            }
-            cb();
-          })
-          .catch(cb);
-      }
+  document.getElementById("btnReset").addEventListener("click", function() {
+    state = defaultConfig();
+    syncFormFromState();
+    showToast("Reset to defaults");
+  });
 
-      function renderGames(games) {
-        if (!Array.isArray(games) || games.length === 0) games = fallbackGames;
-        grid.innerHTML = "";
-        games.forEach(function(g, i) {
-          var card = document.createElement("article");
-          card.className = "game-card";
-          var thumb = g.thumbUrl || "https://via.placeholder.com/200/1a1a2e/6b8cff?text=" + encodeURIComponent((g.name || "?").slice(0, 4));
-          card.innerHTML =
-            "<img class=\"game-card-thumb\" src=\"" + thumb + "\" alt=\"\" loading=\"lazy\" width=\"200\" height=\"200\">" +
-            "<div class=\"game-card-name\">" + (g.name || "Unknown") + "</div>";
-          grid.appendChild(card);
-        });
-        observeInView(grid.querySelectorAll(".game-card"));
-      }
-
-      function observeInView(els) {
-        if (!els || els.length === 0) return;
-        var io = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(function(entries) {
-          entries.forEach(function(e) {
-            if (e.isIntersecting) e.target.classList.add("in-view");
-          });
-        }, { rootMargin: "0px 0px -40px 0px", threshold: 0.1 }) : null;
-        if (io) {
-          for (var i = 0; i < els.length; i++) io.observe(els[i]);
-        } else {
-          for (var j = 0; j < els.length; j++) els[j].classList.add("in-view");
-        }
-      }
-
-      function setupScrollAnimations() {
-        var targets = document.querySelectorAll(".hero-title, .hero-desc, .section-title, .section-desc, .why-card, .faq-item, .loader-block");
-        var io = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(function(entries) {
-          entries.forEach(function(e) {
-            if (e.isIntersecting) e.target.classList.add("in-view");
-          });
-        }, { rootMargin: "0px 0px -50px 0px", threshold: 0.15 }) : null;
-        if (io) {
-          for (var i = 0; i < targets.length; i++) io.observe(targets[i]);
-        } else {
-          for (var j = 0; j < targets.length; j++) targets[j].classList.add("in-view");
-        }
-      }
-
-      if (canFetch) {
-        fetch("/api/games")
-          .then(function(r) { return r.ok ? r.json() : []; })
-          .then(function(data) {
-            if (Array.isArray(data) && data.length > 0) {
-              renderGames(data);
-            } else {
-              fetchMm2Thumb(function() { renderGames(fallbackGames); });
-            }
-          })
-          .catch(function() {
-            fetchMm2Thumb(function() { renderGames(fallbackGames); });
-          });
-      } else {
-        renderGames(fallbackGames);
-      }
-
-      setupScrollAnimations();
-    })();
+  document.getElementById("btnLoad").addEventListener("click", function() {
+    var raw = document.getElementById("importJson").value.trim();
+    if (!raw) { showToast("Paste JSON first"); return; }
+    try {
+      var data = JSON.parse(raw);
+      var revived = reviveIncoming(data);
+      mergeInto(state, revived);
+      syncFormFromState();
+      showToast("Config loaded");
+    } catch (e) {
+      showToast("Invalid JSON");
+    }
+  });
+})();
   </script>
 </body>
 </html>

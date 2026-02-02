@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 task.wait(0.1)
 
+local AXIOM_VERSION = "1.5.0"
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
@@ -190,7 +191,51 @@ local defaultConfig = {
 
         CenterDot = false,
         CenterDotColor = Color3.fromRGB(255, 255, 255),
-        CenterDotRadius = 2
+        CenterDotRadius = 2,
+
+        Outline = true,
+        OutlineColor = Color3.fromRGB(0, 0, 0),
+        OutlineThickness = 1,
+        SkeletonSmooth = false,
+        SkeletonSmoothSpeed = 0.2,
+
+        Box2DUseGradient = false,
+        Box2DGradientColor = Color3.fromRGB(200, 200, 200),
+        Box3DUseGradient = false,
+        Box3DGradientColor = Color3.fromRGB(200, 200, 200),
+        SkeletonUseGradient = false,
+        SkeletonGradientColor = Color3.fromRGB(200, 200, 200),
+        TracerUseGradient = false,
+        TracerGradientColor = Color3.fromRGB(200, 200, 200),
+        HeadDotUseGradient = false,
+        HeadDotGradientColor = Color3.fromRGB(200, 200, 200),
+        TextUseGradient = false,
+        TextGradientColor = Color3.fromRGB(200, 200, 200),
+        ChamsUseGradient = false,
+        ChamsGradientColor = Color3.fromRGB(100, 180, 255),
+        CenterDotUseGradient = false,
+        CenterDotGradientColor = Color3.fromRGB(200, 200, 200),
+        OffscreenArrowUseGradient = false,
+        OffscreenArrowGradientColor = Color3.fromRGB(200, 200, 200)
+    },
+    Crosshair = {
+        Enabled = true,
+        Style = "cross",
+        Length = 8,
+        Thickness = 1,
+        DotMode = false,
+        Color = Color3.fromRGB(255, 255, 255),
+        UseGradient = false,
+        GradientColor = Color3.fromRGB(200, 200, 200),
+        Outline = true,
+        OutlineColor = Color3.fromRGB(0, 0, 0),
+        OutlineThickness = 1,
+        Spin = false,
+        SpinSpeed = 90,
+        ShowAxiomText = true,
+        AxiomTextColor = Color3.fromRGB(255, 255, 255),
+        AxiomTextUseGradient = false,
+        AxiomTextGradientColor = Color3.fromRGB(200, 200, 200)
     },
     Hitbox = {
         Enabled = false,
@@ -261,7 +306,8 @@ local defaultConfig = {
         NotificationVolume = 1,
         WatermarkEnabled = true,
         WatermarkPosition = "TopLeft",
-        UIPreset = "Default"
+        UIPreset = "Default",
+        ProximityPromptInstant = false
     },
     MM2 = {
         SilentAimEnabled = false,
@@ -286,8 +332,6 @@ local defaultConfig = {
     }
 }
 
-local _G_Config = table.clone(defaultConfig)
-
 local function deepClone(t)
     if type(t) ~= "table" then return t end
     local c = {}
@@ -296,6 +340,8 @@ local function deepClone(t)
     end
     return c
 end
+
+local _G_Config = deepClone(defaultConfig)
 
 local function validateConfig(data)
     if type(data) ~= "table" then return table.clone(defaultConfig) end
@@ -325,6 +371,14 @@ local function validateConfig(data)
     if c.Visuals then
         c.Visuals.DistanceLimit = clampNum(c.Visuals.DistanceLimit, 0, 10000) or c.Visuals.DistanceLimit
         c.Visuals.TextSize = clampNum(c.Visuals.TextSize, 8, 32) or c.Visuals.TextSize
+        c.Visuals.SkeletonSmoothSpeed = clampNum(c.Visuals.SkeletonSmoothSpeed, 0.05, 0.5) or c.Visuals.SkeletonSmoothSpeed
+        c.Visuals.OutlineThickness = clampNum(c.Visuals.OutlineThickness, 1, 3) or c.Visuals.OutlineThickness
+    end
+    if c.Crosshair then
+        c.Crosshair.Length = clampNum(c.Crosshair.Length, 1, 32) or c.Crosshair.Length
+        c.Crosshair.Thickness = clampNum(c.Crosshair.Thickness, 1, 4) or c.Crosshair.Thickness
+        c.Crosshair.SpinSpeed = clampNum(c.Crosshair.SpinSpeed, 0, 360) or c.Crosshair.SpinSpeed
+        c.Crosshair.OutlineThickness = clampNum(c.Crosshair.OutlineThickness, 1, 3) or c.Crosshair.OutlineThickness
     end
     if c.Movement then
         c.Movement.SpeedValue = clampNum(c.Movement.SpeedValue, 1, 200) or c.Movement.SpeedValue
@@ -346,7 +400,7 @@ local AxiomNotify
 
 local function AxiomResetSettings()
     for k, v in pairs(defaultConfig) do
-        _G_Config[k] = table.clone(v)
+        _G_Config[k] = deepClone(v)
     end
     AxiomNotify("Axiom.win", "Settings have been reset.", _G_Config)
 end
@@ -354,9 +408,50 @@ end
 local function AxiomResetSection(sectionKey, label)
     local defaults = defaultConfig[sectionKey]
     if defaults then
-        _G_Config[sectionKey] = table.clone(defaults)
+        _G_Config[sectionKey] = deepClone(defaults)
         AxiomNotify("Axiom.win", (label or sectionKey).." reset.", _G_Config)
     end
+end
+
+local function configToSerializable(cfg)
+    if cfg == nil then return nil end
+    if typeof(cfg) == "Color3" then
+        return { _t = "C", r = cfg.R, g = cfg.G, b = cfg.B }
+    end
+    if typeof(cfg) == "EnumItem" then
+        return { _t = "E", s = tostring(cfg) }
+    end
+    if type(cfg) == "table" and (cfg.ClassName == nil and cfg._t == nil) then
+        local out = {}
+        for k, v in pairs(cfg) do
+            out[k] = configToSerializable(v)
+        end
+        return out
+    end
+    return cfg
+end
+
+local function reviveConfig(data)
+    if data == nil then return nil end
+    if type(data) == "table" then
+        local r, g, b = data.r or data.R, data.g or data.G, data.b or data.B
+        if data._t == "C" and r ~= nil and g ~= nil and b ~= nil then
+            return Color3.new(r, g, b)
+        end
+        if data._t == nil and r ~= nil and g ~= nil and b ~= nil and data.s == nil and data.Enabled == nil and data.Key == nil then
+            return Color3.new(r, g, b)
+        end
+        if data._t == "E" and type(data.s) == "string" then
+            local ok, res = pcall(function() return loadstring("return " .. data.s)() end)
+            return (ok and res) or data
+        end
+        local out = {}
+        for k, v in pairs(data) do
+            out[k] = reviveConfig(v)
+        end
+        return out
+    end
+    return data
 end
 
 local function getKeybindConflictNames(key, excludeFeature)
@@ -372,7 +467,33 @@ local function getKeybindConflictNames(key, excludeFeature)
     if excludeFeature ~= "Fly" and sameKey(_G_Config.Movement and _G_Config.Movement.FlyKey, key) then table.insert(list, "Fly") end
     if excludeFeature ~= "Freecam" and sameKey(_G_Config.Movement and _G_Config.Movement.FreecamKey, key) then table.insert(list, "Freecam") end
     if excludeFeature ~= "Zoom" and sameKey(_G_Config.Misc and _G_Config.Misc.ZoomKey, key) then table.insert(list, "Zoom") end
+    local mm2 = _G_Config.MM2
+    if mm2 and excludeFeature ~= "SilentAim" and sameKey(mm2.SilentAimKey, key) then table.insert(list, "Silent Aim") end
+    if mm2 and excludeFeature ~= "KillAll" and sameKey(mm2.KillAllKey, key) then table.insert(list, "Kill All") end
     return list
+end
+
+local function notifyKeybindConflicts()
+    local all = {}
+    local function add(key, label)
+        if key == nil or key == Enum.KeyCode.Unknown then return end
+        local conflicts = getKeybindConflictNames(key, label)
+        for _, c in ipairs(conflicts) do
+            if c ~= label then table.insert(all, label .. " shares key with " .. c) end
+        end
+    end
+    add(_G_Config.Aimbot and _G_Config.Aimbot.Key, "Aimbot")
+    add(_G_Config.Movement and _G_Config.Movement.SpeedKey, "Speed")
+    add(_G_Config.Movement and _G_Config.Movement.FlyKey, "Fly")
+    add(_G_Config.Movement and _G_Config.Movement.FreecamKey, "Freecam")
+    add(_G_Config.Misc and _G_Config.Misc.ZoomKey, "Zoom")
+    if _G_Config.MM2 then
+        add(_G_Config.MM2.SilentAimKey, "Silent Aim")
+        add(_G_Config.MM2.KillAllKey, "Kill All")
+    end
+    if #all > 0 then
+        AxiomNotify("Axiom.win", "Keybind conflicts: " .. table.concat(all, "; "), _G_Config)
+    end
 end
 
 local function getConfigFolder()
@@ -422,9 +543,16 @@ local function saveConfig(name, overwrite)
             writefile(backupPath, backupContent)
         end)
     end
-    local json = HttpService:JSONEncode(_G_Config)
-    writefile(path, json)
-    AxiomNotify("Axiom.win", "Saved config: "..n, _G_Config)
+    local ok, err = pcall(function()
+        local serialized = configToSerializable(_G_Config)
+        local json = HttpService:JSONEncode(serialized)
+        writefile(path, json)
+    end)
+    if ok then
+        AxiomNotify("Axiom.win", "Saved config: "..n, _G_Config)
+    else
+        AxiomNotify("Axiom.win", "Config save failed.", _G_Config)
+    end
 end
 
 local function loadConfig(name)
@@ -433,7 +561,7 @@ local function loadConfig(name)
         return
     end
     local n = sanitizeName(name)
-    if n == "" then
+    if n == "" or n == "(no configs)" then
         AxiomNotify("Axiom.win", "Config name required.", _G_Config)
         return
     end
@@ -446,18 +574,24 @@ local function loadConfig(name)
         return HttpService:JSONDecode(readfile(path))
     end)
     if ok and type(data) == "table" then
+        data = reviveConfig(data)
         local validated = validateConfig(data)
         for k, v in pairs(validated) do
-            _G_Config[k] = v
+            _G_Config[k] = deepClone(v)
         end
         AxiomNotify("Axiom.win", "Loaded config: "..n, _G_Config)
+        notifyKeybindConflicts()
     else
         AxiomNotify("Axiom.win", "Config load failed.", _G_Config)
     end
 end
 
 local function exportConfig()
-    local json = HttpService:JSONEncode(_G_Config)
+    local ok, json = pcall(function() return HttpService:JSONEncode(configToSerializable(_G_Config)) end)
+    if not ok or type(json) ~= "string" then
+        AxiomNotify("Axiom.win", "Export failed.", _G_Config)
+        return nil
+    end
     if setclipboard then
         pcall(function() setclipboard(json) end)
     end
@@ -470,11 +604,13 @@ local function importConfig(json)
         return HttpService:JSONDecode(json)
     end)
     if ok and type(data) == "table" then
+        data = reviveConfig(data)
         local validated = validateConfig(data)
         for k, v in pairs(validated) do
-            _G_Config[k] = v
+            _G_Config[k] = deepClone(v)
         end
         AxiomNotify("Axiom.win", "Config imported.", _G_Config)
+        notifyKeybindConflicts()
     else
         AxiomNotify("Axiom.win", "Invalid config JSON.", _G_Config)
     end
@@ -486,7 +622,9 @@ local function listConfigs()
     end
     local folder = getConfigFolder()
     local items = {}
-    for _, f in ipairs(listfiles(folder)) do
+    local ok, files = pcall(function() return listfiles(folder) end)
+    if not ok or type(files) ~= "table" then return items end
+    for _, f in ipairs(files) do
         local name = f:match("([^/\\]+)%.json$")
         if name then
             table.insert(items, name)
@@ -633,9 +771,14 @@ end
 local function __axiom_build_ui_with_cascade(_G_Config)
     local function __import(owner, repo, version, file)
         local tag = (version == "latest" and "latest/download" or ("download/"..version))
-        local ok, lib = pcall(function()
-            return loadstring(game:HttpGetAsync(("https://github.com/%s/%s/releases/%s/%s"):format(owner, repo, tag, file)), file)()
-        end)
+        local url = ("https://github.com/%s/%s/releases/%s/%s"):format(owner, repo, tag, file)
+        local src
+        local okGet = pcall(function() src = game:HttpGetAsync(url) end)
+        if not okGet and type(game.HttpGet) == "function" then
+            src = game:HttpGet(url)
+        end
+        if not src or type(src) ~= "string" then return nil end
+        local ok, lib = pcall(function() return loadstring(src, file)() end)
         return ok and lib or nil
     end
     local cascade = __import("biggaboy212", "Cascade", "v1.0.1-beta.1", "dist.luau")
@@ -645,7 +788,7 @@ local function __axiom_build_ui_with_cascade(_G_Config)
     end
     local app = cascade.New({ WindowPill = true, Theme = cascade.Themes.Dark })
     UIState.CascadeTheme = "Dark"
-    local window = app:Window({ Title = "Axiom.win", Subtitle = "Private Revision | 1.4.0", Searching = true, Draggable = true, Resizable = true, Dropshadow = true, UIBlur = false })
+    local window = app:Window({ Title = "Axiom.win", Subtitle = "Private Revision | " .. tostring(AXIOM_VERSION), Searching = true, Draggable = true, Resizable = true, Dropshadow = true, UIBlur = false })
     UIState.CascadeWindowInstance = window.__instance
     local function resolveIcon(path, fallback)
         if getcustomasset and isfile and isfile(path) then
@@ -773,6 +916,7 @@ local function __axiom_build_ui_with_cascade(_G_Config)
         end
         local function pointToHSV(x, y)
             local cx, cy = wheel.AbsoluteSize.X/2, wheel.AbsoluteSize.Y/2
+            if cx <= 0 or cy <= 0 then return end
             local dx, dy = x - cx, y - cy
             h = (math.atan2(dy, dx) / (2*math.pi)) % 1
             s = math.clamp(math.sqrt(dx*dx + dy*dy) / cx, 0, 1)
@@ -781,7 +925,9 @@ local function __axiom_build_ui_with_cascade(_G_Config)
         local function pointToValue(x)
             local minX = valueBar.AbsolutePosition.X
             local maxX = minX + valueBar.AbsoluteSize.X
-            v = math.clamp((x - minX) / (maxX - minX), 0, 1)
+            local span = maxX - minX
+            if span <= 0 then return end
+            v = math.clamp((x - minX) / span, 0, 1)
             setPreviewColor()
         end
         table.insert(connections, wheel.InputBegan:Connect(function(input)
@@ -957,6 +1103,31 @@ local function __axiom_build_ui_with_cascade(_G_Config)
         newRow(formColors, "Tool Alpha"):Right():Slider({ Minimum=0, Maximum=1, Value=_G_Config.Visuals.ToolTransparency, ValueChanged=function(_,v) _G_Config.Visuals.ToolTransparency=v end })
         colorRow(formColors, "Arrow Color", function() return _G_Config.Visuals.OffscreenArrowColor end, function(c) _G_Config.Visuals.OffscreenArrowColor = c end)
         newRow(formColors, "Arrow Alpha"):Right():Slider({ Minimum=0, Maximum=1, Value=_G_Config.Visuals.OffscreenArrowTransparency, ValueChanged=function(_,v) _G_Config.Visuals.OffscreenArrowTransparency=v end })
+        local secOut = tab:PageSection({ Title = "Outline & Smooth" })
+        local formOut = secOut:Form()
+        newRow(formOut, "ESP Outline"):Right():Toggle({ Value=_G_Config.Visuals.Outline, ValueChanged=function(_,v) _G_Config.Visuals.Outline=v end })
+        colorRow(formOut, "Outline Color", function() return _G_Config.Visuals.OutlineColor end, function(c) _G_Config.Visuals.OutlineColor = c end)
+        newRow(formOut, "Outline Thickness"):Right():Slider({ Minimum=1, Maximum=3, Value=_G_Config.Visuals.OutlineThickness or 1, ValueChanged=function(_,v) _G_Config.Visuals.OutlineThickness=v end })
+        newRow(formOut, "Skeleton Smooth"):Right():Toggle({ Value=_G_Config.Visuals.SkeletonSmooth, ValueChanged=function(_,v) _G_Config.Visuals.SkeletonSmooth=v end })
+        newRow(formOut, "Skeleton Smooth Speed"):Right():Slider({ Minimum=5, Maximum=50, Value=math.floor((_G_Config.Visuals.SkeletonSmoothSpeed or 0.2)*100), ValueChanged=function(_,v) _G_Config.Visuals.SkeletonSmoothSpeed=v/100 end })
+        newRow(formOut, "2D Box Gradient"):Right():Toggle({ Value=_G_Config.Visuals.Box2DUseGradient, ValueChanged=function(_,v) _G_Config.Visuals.Box2DUseGradient=v end })
+        colorRow(formOut, "2D Box Gradient Color", function() return _G_Config.Visuals.Box2DGradientColor end, function(c) _G_Config.Visuals.Box2DGradientColor = c end)
+        newRow(formOut, "3D Box Gradient"):Right():Toggle({ Value=_G_Config.Visuals.Box3DUseGradient, ValueChanged=function(_,v) _G_Config.Visuals.Box3DUseGradient=v end })
+        colorRow(formOut, "3D Box Gradient Color", function() return _G_Config.Visuals.Box3DGradientColor end, function(c) _G_Config.Visuals.Box3DGradientColor = c end)
+        newRow(formOut, "Skeleton Gradient"):Right():Toggle({ Value=_G_Config.Visuals.SkeletonUseGradient, ValueChanged=function(_,v) _G_Config.Visuals.SkeletonUseGradient=v end })
+        colorRow(formOut, "Skeleton Gradient Color", function() return _G_Config.Visuals.SkeletonGradientColor end, function(c) _G_Config.Visuals.SkeletonGradientColor = c end)
+        newRow(formOut, "Tracer Gradient"):Right():Toggle({ Value=_G_Config.Visuals.TracerUseGradient, ValueChanged=function(_,v) _G_Config.Visuals.TracerUseGradient=v end })
+        colorRow(formOut, "Tracer Gradient Color", function() return _G_Config.Visuals.TracerGradientColor end, function(c) _G_Config.Visuals.TracerGradientColor = c end)
+        newRow(formOut, "Head Dot Gradient"):Right():Toggle({ Value=_G_Config.Visuals.HeadDotUseGradient, ValueChanged=function(_,v) _G_Config.Visuals.HeadDotUseGradient=v end })
+        colorRow(formOut, "Head Dot Gradient Color", function() return _G_Config.Visuals.HeadDotGradientColor end, function(c) _G_Config.Visuals.HeadDotGradientColor = c end)
+        newRow(formOut, "Text Gradient"):Right():Toggle({ Value=_G_Config.Visuals.TextUseGradient, ValueChanged=function(_,v) _G_Config.Visuals.TextUseGradient=v end })
+        colorRow(formOut, "Text Gradient Color", function() return _G_Config.Visuals.TextGradientColor end, function(c) _G_Config.Visuals.TextGradientColor = c end)
+        newRow(formOut, "Chams Gradient"):Right():Toggle({ Value=_G_Config.Visuals.ChamsUseGradient, ValueChanged=function(_,v) _G_Config.Visuals.ChamsUseGradient=v end })
+        colorRow(formOut, "Chams Gradient Color", function() return _G_Config.Visuals.ChamsGradientColor end, function(c) _G_Config.Visuals.ChamsGradientColor = c end)
+        newRow(formOut, "Center Dot Gradient"):Right():Toggle({ Value=_G_Config.Visuals.CenterDotUseGradient, ValueChanged=function(_,v) _G_Config.Visuals.CenterDotUseGradient=v end })
+        colorRow(formOut, "Center Dot Gradient Color", function() return _G_Config.Visuals.CenterDotGradientColor end, function(c) _G_Config.Visuals.CenterDotGradientColor = c end)
+        newRow(formOut, "Arrow Gradient"):Right():Toggle({ Value=_G_Config.Visuals.OffscreenArrowUseGradient, ValueChanged=function(_,v) _G_Config.Visuals.OffscreenArrowUseGradient=v end })
+        colorRow(formOut, "Arrow Gradient Color", function() return _G_Config.Visuals.OffscreenArrowGradientColor end, function(c) _G_Config.Visuals.OffscreenArrowGradientColor = c end)
         local secR = tab:PageSection({ Title = "Reset" })
         local formR = secR:Form()
         newRow(formR, "Reset ESP"):Right():Button({ Label = "Reset", Pushed = function() AxiomResetSection("Visuals", "ESP") end })
@@ -1093,12 +1264,14 @@ local function __axiom_build_ui_with_cascade(_G_Config)
         local currentName = "default"
         local currentJson = ""
         local configs = listConfigs()
+        if #configs == 0 then configs = {"(no configs)"} end
         newRow(form, "Name"):Right():TextField({ Value = currentName, ValueChanged=function(_,v) currentName = v end })
         pullDown(newRow(form, "Select"):Right(), configs, 1, function(i)
-            currentName = configs[i] or currentName
+            if configs[i] and configs[i] ~= "(no configs)" then currentName = configs[i] end
         end)
         newRow(form, "Refresh"):Right():Button({ Label = "Refresh", Pushed = function()
             configs = listConfigs()
+            if #configs == 0 then configs = {"(no configs)"} end
         end })
         newRow(form, "Save"):Right():Button({ Label = "Save", Pushed = function() saveConfig(currentName, false) end })
         newRow(form, "Overwrite"):Right():Button({ Label = "Overwrite", Pushed = function() saveConfig(currentName, true) end })
@@ -1230,6 +1403,28 @@ local function __axiom_build_ui_with_cascade(_G_Config)
         newRow(form, "Others Spoof"):Right():TextField({ Value=_G_Config.Misc.SpoofName or "Anonymous", ValueChanged=function(_,v) _G_Config.Misc.SpoofName=v end })
         newRow(form, "Self Spoof"):Right():TextField({ Value=_G_Config.Misc.MySpoofName or "Anonymous", ValueChanged=function(_,v) _G_Config.Misc.MySpoofName=v end })
         newRow(form, "Instant Prompt"):Right():Toggle({ Value=_G_Config.Misc.ProximityPromptInstant or false, ValueChanged=function(_,v) _G_Config.Misc.ProximityPromptInstant=v end })
+        local secCH = tab:PageSection({ Title = "Crosshair" })
+        local formCH = secCH:Form()
+        local ch = _G_Config.Crosshair
+        if ch then
+            newRow(formCH, "Enable"):Right():Toggle({ Value=ch.Enabled, ValueChanged=function(_,v) ch.Enabled=v end })
+            pullDown(newRow(formCH, "Style"):Right(), {"dot","line","cross"}, ({dot=1,line=2,cross=3})[ch.Style] or 3, function(i) ch.Style=({"dot","line","cross"})[i] end)
+            newRow(formCH, "Dot Mode"):Right():Toggle({ Value=ch.DotMode, ValueChanged=function(_,v) ch.DotMode=v end })
+            newRow(formCH, "Length"):Right():Slider({ Minimum=1, Maximum=32, Value=ch.Length or 8, ValueChanged=function(_,v) ch.Length=v end })
+            newRow(formCH, "Thickness"):Right():Slider({ Minimum=1, Maximum=4, Value=ch.Thickness or 1, ValueChanged=function(_,v) ch.Thickness=v end })
+            colorRow(formCH, "Color", function() return ch.Color end, function(c) ch.Color = c end)
+            newRow(formCH, "Use Gradient"):Right():Toggle({ Value=ch.UseGradient, ValueChanged=function(_,v) ch.UseGradient=v end })
+            colorRow(formCH, "Gradient Color", function() return ch.GradientColor end, function(c) ch.GradientColor = c end)
+            newRow(formCH, "Outline"):Right():Toggle({ Value=ch.Outline, ValueChanged=function(_,v) ch.Outline=v end })
+            colorRow(formCH, "Outline Color", function() return ch.OutlineColor end, function(c) ch.OutlineColor = c end)
+            newRow(formCH, "Outline Thickness"):Right():Slider({ Minimum=1, Maximum=3, Value=ch.OutlineThickness or 1, ValueChanged=function(_,v) ch.OutlineThickness=v end })
+            newRow(formCH, "Spin"):Right():Toggle({ Value=ch.Spin, ValueChanged=function(_,v) ch.Spin=v end })
+            newRow(formCH, "Spin Speed"):Right():Slider({ Minimum=0, Maximum=360, Value=ch.SpinSpeed or 90, ValueChanged=function(_,v) ch.SpinSpeed=v end })
+            newRow(formCH, "axiom.win Text"):Right():Toggle({ Value=ch.ShowAxiomText, ValueChanged=function(_,v) ch.ShowAxiomText=v end })
+            colorRow(formCH, "Text Color", function() return ch.AxiomTextColor end, function(c) ch.AxiomTextColor = c end)
+            newRow(formCH, "Text Gradient"):Right():Toggle({ Value=ch.AxiomTextUseGradient, ValueChanged=function(_,v) ch.AxiomTextUseGradient=v end })
+            colorRow(formCH, "Text Gradient Color", function() return ch.AxiomTextGradientColor end, function(c) ch.AxiomTextGradientColor = c end)
+        end
         local secB = tab:PageSection({ Title = "Settings" })
         local formB = secB:Form()
         newRow(formB, "Reset Settings"):Right():Button({ Label = "Reset", Pushed = function() AxiomResetSettings() end })
@@ -1539,10 +1734,15 @@ end
 local function clearESPEntry(entry)
     if not entry then return end
     if entry.lines2D then for _, l in ipairs(entry.lines2D) do safeRemoveDrawing(l) end end
+    if entry.lines2DOutline then for _, l in ipairs(entry.lines2DOutline) do safeRemoveDrawing(l) end end
     if entry.lines3D then for _, l in ipairs(entry.lines3D) do safeRemoveDrawing(l) end end
+    if entry.lines3DOutline then for _, l in ipairs(entry.lines3DOutline) do safeRemoveDrawing(l) end end
     if entry.skeleton then for _, l in ipairs(entry.skeleton) do safeRemoveDrawing(l) end end
+    if entry.skeletonOutline then for _, l in ipairs(entry.skeletonOutline) do safeRemoveDrawing(l) end end
     safeRemoveDrawing(entry.tracer)
+    safeRemoveDrawing(entry.tracerOutline)
     safeRemoveDrawing(entry.headDot)
+    safeRemoveDrawing(entry.headDotOutline)
     safeRemoveDrawing(entry.nameText)
     safeRemoveDrawing(entry.displayNameText)
     safeRemoveDrawing(entry.distanceText)
@@ -1559,12 +1759,19 @@ local function ensureESPEntry(player)
     if ESP.Entries[player] then return end
     local entry = {}
     entry.lines2D = { createLine(), createLine(), createLine(), createLine() }
+    entry.lines2DOutline = { createLine(), createLine(), createLine(), createLine() }
     entry.lines3D = {}
     for _ = 1, 12 do table.insert(entry.lines3D, createLine()) end
+    entry.lines3DOutline = {}
+    for _ = 1, 12 do table.insert(entry.lines3DOutline, createLine()) end
     entry.skeleton = {}
-    for _ = 1, 12 do table.insert(entry.skeleton, createLine()) end
+    for _ = 1, 14 do table.insert(entry.skeleton, createLine()) end
+    entry.skeletonOutline = {}
+    for _ = 1, 14 do table.insert(entry.skeletonOutline, createLine()) end
     entry.tracer = createLine()
+    entry.tracerOutline = createLine()
     entry.headDot = createCircle()
+    entry.headDotOutline = createCircle()
     entry.nameText = createText()
     entry.displayNameText = createText()
     entry.distanceText = createText()
@@ -1748,6 +1955,7 @@ local function updateESP()
 
         if teamBlocked or not hrp or not distAllowed then
             setLineVisible(entry.lines2D, false)
+            if entry.lines2DOutline then setLineVisible(entry.lines2DOutline, false) end
             setLineVisible(entry.lines3D, false)
             setLineVisible(entry.skeleton, false)
             entry.tracer.Visible = false
@@ -1811,20 +2019,31 @@ local function updateESP()
         if box2dVisible then
             local col = _G_Config.Visuals.Box2DColor
             local alpha = math.clamp(_G_Config.Visuals.Box2DTransparency, 0, 1)
+            local outCol = _G_Config.Visuals.Outline and (_G_Config.Visuals.OutlineColor or col) or col
+            local outThick = math.clamp(tonumber(_G_Config.Visuals.OutlineThickness) or 1, 1, 3)
             local lines = entry.lines2D
-            lines[1].From, lines[1].To = Vector2.new(minX, minY), Vector2.new(maxX, minY)
-            lines[2].From, lines[2].To = Vector2.new(maxX, minY), Vector2.new(maxX, maxY)
-            lines[3].From, lines[3].To = Vector2.new(maxX, maxY), Vector2.new(minX, maxY)
-            lines[4].From, lines[4].To = Vector2.new(minX, maxY), Vector2.new(minX, minY)
-            for _, l in ipairs(lines) do l.Color = col l.Transparency = alpha end
-            for _, l in ipairs(lines) do l.Thickness = 2 end
+            local pts = { Vector2.new(minX, minY), Vector2.new(maxX, minY), Vector2.new(maxX, maxY), Vector2.new(minX, maxY) }
+            for i = 1, 4 do
+                local fromP, toP = pts[i], pts[(i < 4) and (i + 1) or 1]
+                if entry.lines2DOutline and entry.lines2DOutline[i] and _G_Config.Visuals.Outline then
+                    entry.lines2DOutline[i].From = fromP entry.lines2DOutline[i].To = toP entry.lines2DOutline[i].Color = outCol entry.lines2DOutline[i].Transparency = alpha entry.lines2DOutline[i].Thickness = 2 + outThick entry.lines2DOutline[i].Visible = true
+                end
+                lines[i].From, lines[i].To = fromP, toP
+                lines[i].Color = _G_Config.Visuals.Box2DUseGradient and (_G_Config.Visuals.Box2DGradientColor or col) or col
+                lines[i].Transparency = alpha
+                lines[i].Thickness = 2
+            end
         end
 
         local box3dVisible = _G_Config.Visuals.Box3D and onScreenAny
         setLineVisible(entry.lines3D, box3dVisible)
+        if entry.lines3DOutline then setLineVisible(entry.lines3DOutline, box3dVisible and _G_Config.Visuals.Outline) end
         if box3dVisible then
             local col = _G_Config.Visuals.Box3DColor
             local alpha = math.clamp(_G_Config.Visuals.Box3DTransparency, 0, 1)
+            local outCol = _G_Config.Visuals.Outline and (_G_Config.Visuals.OutlineColor or col) or col
+            local outThick = math.clamp(tonumber(_G_Config.Visuals.OutlineThickness) or 1, 1, 3)
+            local mainCol = _G_Config.Visuals.Box3DUseGradient and (_G_Config.Visuals.Box3DGradientColor or col) or col
             local p = projected
             local idxPairs = {
                 {1,2},{2,3},{3,4},{4,1},
@@ -1832,10 +2051,23 @@ local function updateESP()
                 {1,5},{2,6},{3,7},{4,8}
             }
             for i, pair in ipairs(idxPairs) do
+                local fromP, toP = p[pair[1]], p[pair[2]]
+                if entry.lines3DOutline and entry.lines3DOutline[i] then
+                    if _G_Config.Visuals.Outline then
+                        entry.lines3DOutline[i].From = fromP
+                        entry.lines3DOutline[i].To = toP
+                        entry.lines3DOutline[i].Color = outCol
+                        entry.lines3DOutline[i].Transparency = alpha
+                        entry.lines3DOutline[i].Thickness = 1.5 + outThick
+                        entry.lines3DOutline[i].Visible = true
+                    else
+                        entry.lines3DOutline[i].Visible = false
+                    end
+                end
                 local l = entry.lines3D[i]
-                l.From = p[pair[1]]
-                l.To = p[pair[2]]
-                l.Color = col
+                l.From = fromP
+                l.To = toP
+                l.Color = mainCol
                 l.Transparency = alpha
                 l.Thickness = 1.5
             end
@@ -1846,44 +2078,55 @@ local function updateESP()
         if skelVisible then
             local col = _G_Config.Visuals.SkeletonColor
             local alpha = math.clamp(_G_Config.Visuals.SkeletonTransparency, 0, 1)
-            local joints = {
-                {"Head","UpperTorso"},
-                {"UpperTorso","LowerTorso"},
-                {"UpperTorso","LeftUpperArm"},
-                {"LeftUpperArm","LeftLowerArm"},
-                {"LeftLowerArm","LeftHand"},
-                {"UpperTorso","RightUpperArm"},
-                {"RightUpperArm","RightLowerArm"},
-                {"RightLowerArm","RightHand"},
-                {"LowerTorso","LeftUpperLeg"},
-                {"LeftUpperLeg","LeftLowerLeg"},
-                {"LeftLowerLeg","LeftFoot"},
-                {"LowerTorso","RightUpperLeg"},
-            }
+            local outlineCol = _G_Config.Visuals.OutlineColor or Color3.fromRGB(0, 0, 0)
+            local outlineThick = math.clamp(tonumber(_G_Config.Visuals.OutlineThickness) or 1, 1, 3)
+            local useOutline = _G_Config.Visuals.Outline and _G_Config.Visuals.OutlineColor
+            local smooth = _G_Config.Visuals.SkeletonSmooth and (tonumber(_G_Config.Visuals.SkeletonSmoothSpeed) or 0.2)
+            local joints
+            if char:FindFirstChild("UpperTorso") then
+                joints = {
+                    {"Head","UpperTorso"}, {"UpperTorso","LowerTorso"}, {"UpperTorso","LeftUpperArm"}, {"LeftUpperArm","LeftLowerArm"}, {"LeftLowerArm","LeftHand"},
+                    {"UpperTorso","RightUpperArm"}, {"RightUpperArm","RightLowerArm"}, {"RightLowerArm","RightHand"},
+                    {"LowerTorso","LeftUpperLeg"}, {"LeftUpperLeg","LeftLowerLeg"}, {"LeftLowerLeg","LeftFoot"},
+                    {"LowerTorso","RightUpperLeg"}, {"RightUpperLeg","RightLowerLeg"}, {"RightLowerLeg","RightFoot"},
+                }
+            else
+                joints = {
+                    {"Head","Torso"}, {"Torso","Left Arm"}, {"Torso","Right Arm"}, {"Torso","Left Leg"}, {"Torso","Right Leg"},
+                }
+            end
+            if not entry.skeletonPrev then entry.skeletonPrev = {} end
             for i, pair in ipairs(joints) do
                 local p1 = char:FindFirstChild(pair[1])
                 local p2 = char:FindFirstChild(pair[2])
                 local l = entry.skeleton[i]
-                if p1 and p2 then
-                    local s1 = Camera:WorldToViewportPoint(p1.Position)
-                    local s2 = Camera:WorldToViewportPoint(p2.Position)
-                    l.From = Vector2.new(s1.X, s1.Y)
-                    l.To = Vector2.new(s2.X, s2.Y)
-                    l.Color = col
-                    l.Transparency = alpha
-                    l.Thickness = 1.5
-                    l.Visible = true
+                if p1 and p2 and p1.Parent and p2.Parent then
+                    local s1 = Camera:WorldToViewportPoint(p1.CFrame.Position)
+                    local s2 = Camera:WorldToViewportPoint(p2.CFrame.Position)
+                    local fromP = Vector2.new(s1.X, s1.Y)
+                    local toP = Vector2.new(s2.X, s2.Y)
+                    if smooth and entry.skeletonPrev[i] then
+                        local prev = entry.skeletonPrev[i]
+                        fromP = prev.From and prev.From:Lerp(fromP, smooth) or fromP
+                        toP = prev.To and prev.To:Lerp(toP, smooth) or toP
+                    end
+                    entry.skeletonPrev[i] = { From = fromP, To = toP }
+                    if useOutline and entry.skeletonOutline and entry.skeletonOutline[i] then
+                        entry.skeletonOutline[i].From = fromP entry.skeletonOutline[i].To = toP entry.skeletonOutline[i].Color = outlineCol entry.skeletonOutline[i].Thickness = 1.5 + outlineThick entry.skeletonOutline[i].Transparency = alpha entry.skeletonOutline[i].Visible = true
+                    end
+                    l.From = fromP l.To = toP l.Color = _G_Config.Visuals.SkeletonUseGradient and (_G_Config.Visuals.SkeletonGradientColor or col) or col l.Transparency = alpha l.Thickness = 1.5 l.Visible = true
                 else
                     l.Visible = false
+                    if entry.skeletonOutline and entry.skeletonOutline[i] then entry.skeletonOutline[i].Visible = false end
                 end
+            end
+            for i = #joints + 1, 14 do
+                if entry.skeleton[i] then entry.skeleton[i].Visible = false end
+                if entry.skeletonOutline and entry.skeletonOutline[i] then entry.skeletonOutline[i].Visible = false end
             end
         end
 
         if _G_Config.Visuals.Tracer and onScreenAny then
-            entry.tracer.Visible = true
-            entry.tracer.Color = _G_Config.Visuals.TracerColor
-            entry.tracer.Transparency = math.clamp(_G_Config.Visuals.TracerTransparency, 0, 1)
-            entry.tracer.Thickness = 1.5
             local originX, originY
             if _G_Config.Visuals.TracerOrigin == "Mouse" then
                 local mousePos = UserInputService:GetMouseLocation()
@@ -1892,31 +2135,74 @@ local function updateESP()
                 originY = ( _G_Config.Visuals.TracerOrigin == "Top" and 0 ) or ( _G_Config.Visuals.TracerOrigin == "Center" and center.Y ) or Camera.ViewportSize.Y
                 originX = center.X
             end
-            entry.tracer.From = Vector2.new(originX, originY)
-            entry.tracer.To = hrp2d
+            local fromP, toP = Vector2.new(originX, originY), hrp2d
+            local alpha = math.clamp(_G_Config.Visuals.TracerTransparency, 0, 1)
+            local outThick = math.clamp(tonumber(_G_Config.Visuals.OutlineThickness) or 1, 1, 3)
+            local mainCol = _G_Config.Visuals.TracerUseGradient and (_G_Config.Visuals.TracerGradientColor or _G_Config.Visuals.TracerColor) or _G_Config.Visuals.TracerColor
+            local outCol = _G_Config.Visuals.Outline and (_G_Config.Visuals.OutlineColor or mainCol) or mainCol
+            if entry.tracerOutline and _G_Config.Visuals.Outline then
+                entry.tracerOutline.Visible = true
+                entry.tracerOutline.From = fromP
+                entry.tracerOutline.To = toP
+                entry.tracerOutline.Color = outCol
+                entry.tracerOutline.Transparency = alpha
+                entry.tracerOutline.Thickness = 1.5 + outThick
+            else
+                if entry.tracerOutline then entry.tracerOutline.Visible = false end
+            end
+            entry.tracer.Visible = true
+            entry.tracer.From = fromP
+            entry.tracer.To = toP
+            entry.tracer.Color = mainCol
+            entry.tracer.Transparency = alpha
+            entry.tracer.Thickness = 1.5
         else
             entry.tracer.Visible = false
+            if entry.tracerOutline then entry.tracerOutline.Visible = false end
         end
 
         if _G_Config.Visuals.HeadDot and head then
             local headScreen = Camera:WorldToViewportPoint(head.Position)
-            entry.headDot.Visible = headScreen.Z > 0
-            entry.headDot.Position = Vector2.new(headScreen.X, headScreen.Y)
-            entry.headDot.Radius = _G_Config.Visuals.HeadDotRadius
-            entry.headDot.Color = _G_Config.Visuals.HeadDotColor
-            entry.headDot.Transparency = math.clamp(_G_Config.Visuals.HeadDotTransparency, 0, 1)
+            local pos2 = Vector2.new(headScreen.X, headScreen.Y)
+            local radius = _G_Config.Visuals.HeadDotRadius
+            local alpha = math.clamp(_G_Config.Visuals.HeadDotTransparency, 0, 1)
+            local outThick = math.clamp(tonumber(_G_Config.Visuals.OutlineThickness) or 1, 1, 3)
+            local mainCol = _G_Config.Visuals.HeadDotUseGradient and (_G_Config.Visuals.HeadDotGradientColor or _G_Config.Visuals.HeadDotColor) or _G_Config.Visuals.HeadDotColor
+            local outCol = _G_Config.Visuals.Outline and (_G_Config.Visuals.OutlineColor or mainCol) or mainCol
+            if headScreen.Z > 0 then
+                if entry.headDotOutline and _G_Config.Visuals.Outline then
+                    entry.headDotOutline.Visible = true
+                    entry.headDotOutline.Position = pos2
+                    entry.headDotOutline.Radius = radius + outThick
+                    entry.headDotOutline.Color = outCol
+                    entry.headDotOutline.Transparency = alpha
+                    entry.headDotOutline.Thickness = 1
+                else
+                    if entry.headDotOutline then entry.headDotOutline.Visible = false end
+                end
+                entry.headDot.Visible = true
+                entry.headDot.Position = pos2
+                entry.headDot.Radius = radius
+                entry.headDot.Color = mainCol
+                entry.headDot.Transparency = alpha
+            else
+                entry.headDot.Visible = false
+                if entry.headDotOutline then entry.headDotOutline.Visible = false end
+            end
         else
             entry.headDot.Visible = false
+            if entry.headDotOutline then entry.headDotOutline.Visible = false end
         end
 
         local infoPos = _G_Config.Visuals.InfoPosition
         local textY = (infoPos == "Bottom") and (maxY + 2) or (minY - 16)
         local textStep = 14
+        local textCol = _G_Config.Visuals.TextUseGradient and (_G_Config.Visuals.TextGradientColor or _G_Config.Visuals.TextColor) or _G_Config.Visuals.TextColor
         if _G_Config.Visuals.Name then
             entry.nameText.Visible = true
             entry.nameText.Text = player.Name
             entry.nameText.Size = textSize
-            entry.nameText.Color = _G_Config.Visuals.TextColor
+            entry.nameText.Color = textCol
             entry.nameText.Transparency = math.clamp(_G_Config.Visuals.TextTransparency, 0, 1)
             entry.nameText.Position = Vector2.new((minX+maxX)/2, textY)
             textY = (infoPos == "Bottom") and (textY + textStep) or (textY - textStep)
@@ -1927,7 +2213,7 @@ local function updateESP()
             entry.displayNameText.Visible = true
             entry.displayNameText.Text = getSpoofedName(player)
             entry.displayNameText.Size = textSize
-            entry.displayNameText.Color = _G_Config.Visuals.TextColor
+            entry.displayNameText.Color = textCol
             entry.displayNameText.Transparency = math.clamp(_G_Config.Visuals.TextTransparency, 0, 1)
             entry.displayNameText.Position = Vector2.new((minX+maxX)/2, textY)
             textY = (infoPos == "Bottom") and (textY + textStep) or (textY - textStep)
@@ -1938,7 +2224,7 @@ local function updateESP()
             entry.distanceText.Visible = true
             entry.distanceText.Text = string.format("%dm", math.floor(distance))
             entry.distanceText.Size = textSize
-            entry.distanceText.Color = _G_Config.Visuals.TextColor
+            entry.distanceText.Color = textCol
             entry.distanceText.Transparency = math.clamp(_G_Config.Visuals.TextTransparency, 0, 1)
             entry.distanceText.Position = Vector2.new((minX+maxX)/2, (infoPos == "Bottom") and (textY) or (maxY + 2))
             if infoPos == "Bottom" then
@@ -1952,7 +2238,7 @@ local function updateESP()
             entry.healthText.Visible = true
             entry.healthText.Text = string.format("HP: %d", math.floor(hum.Health))
             entry.healthText.Size = textSize
-            entry.healthText.Color = _G_Config.Visuals.TextColor
+            entry.healthText.Color = textCol
             entry.healthText.Transparency = math.clamp(_G_Config.Visuals.TextTransparency, 0, 1)
             entry.healthText.Position = Vector2.new((minX+maxX)/2, (infoPos == "Bottom") and (textY) or (maxY + 16))
             if infoPos == "Bottom" then
@@ -1962,7 +2248,8 @@ local function updateESP()
             entry.healthText.Visible = false
         end
         if _G_Config.Visuals.Health and hum and (healthMode == "Bar" or healthMode == "Both") then
-            local healthPct = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+            local maxH = (type(hum.MaxHealth) == "number" and hum.MaxHealth > 0) and hum.MaxHealth or 1
+            local healthPct = math.clamp(hum.Health / maxH, 0, 1)
             local barX = (_G_Config.Visuals.HealthBarSide == "Right") and (maxX + 4) or (minX - 4)
             local barTop = minY
             local barBottom = maxY
@@ -1982,7 +2269,7 @@ local function updateESP()
             entry.toolText.Visible = true
             entry.toolText.Text = tool.Name
             entry.toolText.Size = textSize
-            entry.toolText.Color = _G_Config.Visuals.TextColor
+            entry.toolText.Color = textCol
             entry.toolText.Transparency = math.clamp(_G_Config.Visuals.TextTransparency, 0, 1)
             entry.toolText.Position = Vector2.new((minX+maxX)/2, (infoPos == "Bottom") and (textY) or (minY - 30))
             if infoPos == "Bottom" then
@@ -1997,7 +2284,7 @@ local function updateESP()
                 entry.highlight.Enabled = true
                 entry.highlight.Adornee = char
                 entry.highlight.FillColor = _G_Config.Visuals.ChamsColor
-                entry.highlight.OutlineColor = _G_Config.Visuals.ChamsColor
+                entry.highlight.OutlineColor = _G_Config.Visuals.ChamsUseGradient and (_G_Config.Visuals.ChamsGradientColor or _G_Config.Visuals.ChamsColor) or _G_Config.Visuals.ChamsColor
                 entry.highlight.FillTransparency = math.clamp(_G_Config.Visuals.ChamsTransparency, 0, 1)
                 entry.highlight.OutlineTransparency = math.clamp(_G_Config.Visuals.ChamsTransparency * 0.6, 0, 1)
                 entry.chamsBox.Visible = false
@@ -2044,7 +2331,7 @@ local function updateESP()
                 entry.arrow.PointA = pos
                 entry.arrow.PointB = pos - dir * size + perp * (size * 0.6)
                 entry.arrow.PointC = pos - dir * size - perp * (size * 0.6)
-                entry.arrow.Color = _G_Config.Visuals.OffscreenArrowColor
+                entry.arrow.Color = _G_Config.Visuals.OffscreenArrowUseGradient and (_G_Config.Visuals.OffscreenArrowGradientColor or _G_Config.Visuals.OffscreenArrowColor) or _G_Config.Visuals.OffscreenArrowColor
                 entry.arrow.Transparency = math.clamp(_G_Config.Visuals.OffscreenArrowTransparency, 0, 1)
                 entry.arrow.Visible = true
             else
@@ -2143,7 +2430,7 @@ AxiomTrackConnection(UserInputService.InputEnded:Connect(function(input)
     end
     if _G_Config.Movement.SpeedMode == "Hold" and input.KeyCode == _G_Config.Movement.SpeedKey then _G_Config.Movement.SpeedActive = false end
     if _G_Config.Movement.FlyMode == "Hold" and input.KeyCode == _G_Config.Movement.FlyKey then _G_Config.Movement.FlyActive = false end
-    if _G_Config.Movement.FreecamMode == "Hold" and input.KeyCode == _G_Config.Movement.FreecamKey then _G_Config.Movement.FreecamActive = false end
+    if _G_Config.Movement.FreecamMode == "Hold" and _G_Config.Movement.FreecamKey ~= Enum.KeyCode.Unknown and input.KeyCode == _G_Config.Movement.FreecamKey then _G_Config.Movement.FreecamActive = false end
 end))
 
 AxiomTrackConnection(LocalPlayer.CharacterAdded:Connect(function()
@@ -2189,6 +2476,25 @@ local fovStroke = Instance.new("UIStroke")
 fovStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 fovStroke.Parent = fovFrame
 
+local crosshairAngle = 0
+local crosshairDot = Drawing.new("Circle")
+crosshairDot.Visible = false
+crosshairDot.Filled = true
+crosshairDot.Thickness = 1
+local crosshairDotOutline = Drawing.new("Circle")
+crosshairDotOutline.Visible = false
+crosshairDotOutline.Filled = false
+crosshairDotOutline.Thickness = 1
+local crosshairLines = {}
+for _ = 1, 4 do local L = Drawing.new("Line") L.Visible = false L.Thickness = 1 table.insert(crosshairLines, L) end
+local crosshairOutlineLines = {}
+for _ = 1, 4 do local L = Drawing.new("Line") L.Visible = false L.Thickness = 1 table.insert(crosshairOutlineLines, L) end
+local crosshairText = Drawing.new("Text")
+crosshairText.Visible = false
+crosshairText.Center = true
+crosshairText.Size = 14
+crosshairText.Text = "axiom.win"
+
 local freecamCF, freecamRot = Camera.CFrame, Vector2.new(0, 0)
 local lastFreecamMousePos = nil
 local freecamWasActiveLastFrame = false
@@ -2232,6 +2538,9 @@ AxiomTrackConnection(RunService.RenderStepped:Connect(function(dt)
     if _G_Config.Misc.ZoomMode == "Hold" and _G_Config.Misc.ZoomActive and not UserInputService:IsKeyDown(_G_Config.Misc.ZoomKey) then
         _G_Config.Misc.ZoomActive = false
     end
+    if _G_Config.Movement.FreecamMode == "Hold" and _G_Config.Movement.FreecamActive and _G_Config.Movement.FreecamKey ~= Enum.KeyCode.Unknown and not UserInputService:IsKeyDown(_G_Config.Movement.FreecamKey) then
+        _G_Config.Movement.FreecamActive = false
+    end
     if _G_Config.Misc.ZoomMode == "Always On" then
         _G_Config.Misc.ZoomActive = _G_Config.Misc.ZoomEnabled
     elseif not _G_Config.Misc.ZoomEnabled then
@@ -2251,8 +2560,67 @@ AxiomTrackConnection(RunService.RenderStepped:Connect(function(dt)
 
     dotObj.Visible = _G_Config.Visuals.CenterDot
     dotObj.Radius = _G_Config.Visuals.CenterDotRadius
-    dotObj.Color = _G_Config.Visuals.CenterDotColor
+    dotObj.Color = _G_Config.Visuals.CenterDotUseGradient and (_G_Config.Visuals.CenterDotGradientColor or _G_Config.Visuals.CenterDotColor) or _G_Config.Visuals.CenterDotColor
     dotObj.Position = Camera.ViewportSize / 2
+
+    do
+        local ch = _G_Config.Crosshair
+        if ch and ch.Enabled then
+            if ch.Spin then crosshairAngle = crosshairAngle + (tonumber(ch.SpinSpeed) or 90) * math.rad(1) * dt end
+            local center = Camera.ViewportSize / 2
+            local angle = ch.Spin and crosshairAngle or 0
+            local len = math.max(0, tonumber(ch.Length) or 8)
+            local thick = math.clamp(tonumber(ch.Thickness) or 1, 1, 4)
+            local outThick = math.clamp(tonumber(ch.OutlineThickness) or 1, 1, 3)
+            local mainColor = ch.Color or Color3.fromRGB(255, 255, 255)
+            local gradColor = ch.UseGradient and (ch.GradientColor or mainColor) or mainColor
+            local outColor = ch.Outline and (ch.OutlineColor or Color3.fromRGB(0, 0, 0)) or mainColor
+            local function rot(v) return Vector2.new(v.X * math.cos(angle) - v.Y * math.sin(angle), v.X * math.sin(angle) + v.Y * math.cos(angle)) end
+            if ch.DotMode or ch.Style == "dot" then
+                local dotRadius = math.max(1, len)
+                if ch.Outline and crosshairDotOutline then
+                    crosshairDotOutline.Visible = true
+                    crosshairDotOutline.Position = center
+                    crosshairDotOutline.Radius = dotRadius + outThick
+                    crosshairDotOutline.Color = outColor
+                    crosshairDotOutline.Thickness = math.max(1, outThick)
+                else
+                    if crosshairDotOutline then crosshairDotOutline.Visible = false end
+                end
+                crosshairDot.Visible = true
+                crosshairDot.Position = center
+                crosshairDot.Radius = dotRadius
+                crosshairDot.Color = ch.UseGradient and gradColor or mainColor
+                crosshairDot.Thickness = thick
+                for i = 1, 4 do crosshairLines[i].Visible = false crosshairOutlineLines[i].Visible = false end
+            else
+                crosshairDot.Visible = false
+                if crosshairDotOutline then crosshairDotOutline.Visible = false end
+                if ch.Style == "line" then
+                    local fromP = center + rot(Vector2.new(-len, 0))
+                    local toP = center + rot(Vector2.new(len, 0))
+                    if ch.Outline then crosshairOutlineLines[1].Visible = true crosshairOutlineLines[1].From = fromP crosshairOutlineLines[1].To = toP crosshairOutlineLines[1].Color = outColor crosshairOutlineLines[1].Thickness = thick + (outThick * 2) else crosshairOutlineLines[1].Visible = false end
+                    crosshairLines[1].Visible = true crosshairLines[1].From = fromP crosshairLines[1].To = toP crosshairLines[1].Color = ch.UseGradient and gradColor or mainColor crosshairLines[1].Thickness = thick
+                    for i = 2, 4 do crosshairLines[i].Visible = false crosshairOutlineLines[i].Visible = false end
+                else
+                    local dirs = { Vector2.new(0, -1), Vector2.new(0, 1), Vector2.new(-1, 0), Vector2.new(1, 0) }
+                    for i = 1, 4 do
+                        local d = dirs[i]
+                        local toC = center + rot(d * len)
+                        if ch.Outline then crosshairOutlineLines[i].Visible = true crosshairOutlineLines[i].From = center crosshairOutlineLines[i].To = toC crosshairOutlineLines[i].Color = outColor crosshairOutlineLines[i].Thickness = thick + (outThick * 2) else crosshairOutlineLines[i].Visible = false end
+                        crosshairLines[i].Visible = true crosshairLines[i].From = center crosshairLines[i].To = toC crosshairLines[i].Color = ch.UseGradient and gradColor or mainColor crosshairLines[i].Thickness = thick
+                    end
+                end
+            end
+            crosshairText.Visible = ch.ShowAxiomText
+            if ch.ShowAxiomText then crosshairText.Position = center + Vector2.new(0, (ch.DotMode or ch.Style == "dot") and (math.max(1, len) + 12) or (len + 14)) crosshairText.Color = ch.AxiomTextUseGradient and (ch.AxiomTextGradientColor or ch.AxiomTextColor) or (ch.AxiomTextColor or Color3.fromRGB(255, 255, 255)) crosshairText.Text = "axiom.win" end
+        else
+            crosshairDot.Visible = false
+            if crosshairDotOutline then crosshairDotOutline.Visible = false end
+            for i = 1, 4 do crosshairLines[i].Visible = false crosshairOutlineLines[i].Visible = false end
+            crosshairText.Visible = false
+        end
+    end
 
     if _G_Config.Misc.ZoomEnabled and _G_Config.Misc.ZoomActive and _G_Config.Misc.ZoomMethod == "FOV" then
         local targetFOV = math.clamp(tonumber(_G_Config.Misc.ZoomAmount) or 30, 5, 120)
@@ -2501,9 +2869,17 @@ end))
 AxiomTrackConnection(RunService.Heartbeat:Connect(function(dt)
     local succ, L_Serv = pcall(function() return game:GetService("Lighting") end)
     if succ and L_Serv then
-        if _G_Config.Misc.AmbientEnabled then L_Serv.Ambient = _G_Config.Misc.AmbientColor L_Serv.OutdoorAmbient = _G_Config.Misc.AmbientColor end
-        if _G_Config.Misc.FullBright then L_Serv.Brightness, L_Serv.ClockTime, L_Serv.GlobalShadows = 2, 14, false end
-            end
+        if _G_Config.Misc.AmbientEnabled then
+            L_Serv.Ambient = _G_Config.Misc.AmbientColor
+            L_Serv.OutdoorAmbient = _G_Config.Misc.AmbientColor
+        end
+        if _G_Config.Misc.FullBright then
+            L_Serv.Brightness, L_Serv.ClockTime, L_Serv.GlobalShadows = 2, 14, false
+        else
+            L_Serv.Brightness = 1
+            L_Serv.GlobalShadows = true
+        end
+    end
 
     if _G_Config.Misc.StreamerMode then
         streamerAccum += dt
@@ -2528,13 +2904,14 @@ AxiomTrackConnection(RunService.Heartbeat:Connect(function(dt)
                 applySpoofToPlayer(p)
             end
             for _, obj in ipairs(coreGuiCache) do
+                if not obj.Parent then continue end
                 local t = obj.Text
                 if typeof(t) == "string" and #t > 0 then
                     for original, replacement in pairs(spoofMap) do
                         local pattern = escapePattern(original)
                         t = t:gsub(pattern, replacement)
                     end
-                    obj.Text = t
+                    pcall(function() obj.Text = t end)
                 end
             end
         end

@@ -1,10 +1,9 @@
-# axiom.winv2 — website
+# Axiom.win — Config generator
 
-Landing for Axiom.win. One loader, one copy button, game cards.
+Single-page **config generator** for Axiom. No file hosting, no landing page.
 
-- **index.html** — Hero, copy-loader block, why cards, FAQ, supported games. Loader fetches `scripts/core.lua` from GitHub.
-- **api/games.js** — Vercel serverless: returns supported games (MM2 place IDs + Universal) with names and Roblox thumbnails.
-- **axiom.css** — Tokens and base styles.
+- **index.html** — Build your Axiom config in the browser (Aimbot, Visuals, Crosshair, Movement, Misc, Hitbox, MM2). Copy JSON and paste it in-game via Config → Import.
+- **axiom.css** — Design tokens and base styles.
+- **api/games.js** — Optional Vercel serverless (supported games). Not required for the config generator.
 
-Deploy this folder (e.g. Vercel) so `/api/games` works. The copied loader is:  
-`loadstring(game:HttpGet("https://raw.githubusercontent.com/itssor/axiom.winv2/main/scripts/core.lua"))()`
+Deploy the `website` folder (e.g. Vercel, Netlify, or any static host). The loader and scripts are served from GitHub; this site is a tool only.
