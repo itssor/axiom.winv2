@@ -156,7 +156,6 @@ local defaultConfig = {
         Style = "cross",
         Length = 8,
         Thickness = 1,
-        DotMode = false,
         Color = Color3.fromRGB(255, 255, 255),
         UseGradient = false,
         GradientColor = Color3.fromRGB(200, 200, 200),
@@ -165,7 +164,6 @@ local defaultConfig = {
         OutlineThickness = 1,
         Spin = false,
         SpinSpeed = 90,
-        ShowAxiomText = true,
         AxiomTextColor = Color3.fromRGB(255, 255, 255),
         AxiomTextUseGradient = false,
         AxiomTextGradientColor = Color3.fromRGB(200, 200, 200)
@@ -180,7 +178,10 @@ local defaultConfig = {
         Mode = "Hold",
         WallCheck = true,
         TeamCheck = false,
-        Prioritization = "ClosestToCrosshair"
+        Prioritization = "ClosestToCrosshair",
+        SnapLine = true,
+        SnapLineColor = Color3.fromRGB(255, 255, 255),
+        SnapLineThickness = 1
     },
     Hitbox = {
         Enabled = false,
@@ -852,7 +853,8 @@ local function __axiom_build_ui_with_cascade(_G_Config)
         closeBtn.Parent = frame
         Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
         closeBtn.ZIndex = 3
-        local h, s, v = Color3.toHSV(initialColor or Color3.new(1,1,1))
+        local c = initialColor or Color3.new(1,1,1)
+        local h, s, v = c:ToHSV()
         local draggingWheel, draggingValue = false, false
         local connections = {}
         local function setPreviewColor()
@@ -860,7 +862,7 @@ local function __axiom_build_ui_with_cascade(_G_Config)
             preview.BackgroundColor3 = c
             valueFill.BackgroundColor3 = Color3.fromHSV(h, s, 1)
             cross.BorderColor3 = accent or (isDark and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(20, 20, 20))
-            local radius = wheel.AbsoluteSize.X/2
+            local radius = math.max(1, wheel.AbsoluteSize.X / 2)
             local angle = h * 2 * math.pi
             cross.Position = UDim2.new(0, radius + math.cos(angle) * radius * s - 5, 0, radius + math.sin(angle) * radius * s - 5)
         end
@@ -993,6 +995,9 @@ local function __axiom_build_ui_with_cascade(_G_Config)
         pullDown(newRow(form, "Activation"):Right(), { "Hold", "Toggle", "Always On" }, ({ Hold = 1, Toggle = 2, ["Always On"] = 3 })[_G_Config.SilentAim.Mode] or 1, function(i) _G_Config.SilentAim.Mode = ({ "Hold", "Toggle", "Always On" })[i] end })
         newRow(form, "Wall Check"):Right():Toggle({ Value = _G_Config.SilentAim.WallCheck, ValueChanged = function(_, v) _G_Config.SilentAim.WallCheck = v end })
         newRow(form, "Team Check"):Right():Toggle({ Value = _G_Config.SilentAim.TeamCheck, ValueChanged = function(_, v) _G_Config.SilentAim.TeamCheck = v end })
+        newRow(form, "Snap Line"):Right():Toggle({ Value = _G_Config.SilentAim.SnapLine, ValueChanged = function(_, v) _G_Config.SilentAim.SnapLine = v end })
+        colorRow(form, "Snap Line Color", function() return _G_Config.SilentAim.SnapLineColor end, function(c) _G_Config.SilentAim.SnapLineColor = c end)
+        newRow(form, "Snap Line Thickness"):Right():Slider({ Minimum = 1, Maximum = 4, Value = _G_Config.SilentAim.SnapLineThickness or 1, ValueChanged = function(_, v) _G_Config.SilentAim.SnapLineThickness = v end })
         newRow(form, "Key"):Right():KeybindField({ Value = _G_Config.SilentAim.Key, ValueChanged = function(_, k)
             _G_Config.SilentAim.Key = k
             local conflicts = getKeybindConflictNames(k, "Silent Aim")
@@ -1308,7 +1313,6 @@ local function __axiom_build_ui_with_cascade(_G_Config)
         if ch then
             newRow(formCH, "Enable"):Right():Toggle({ Value=ch.Enabled, ValueChanged=function(_,v) ch.Enabled=v end })
             pullDown(newRow(formCH, "Style"):Right(), {"dot","line","cross"}, ({dot=1,line=2,cross=3})[ch.Style] or 3, function(i) ch.Style=({"dot","line","cross"})[i] end)
-            newRow(formCH, "Dot Mode"):Right():Toggle({ Value=ch.DotMode, ValueChanged=function(_,v) ch.DotMode=v end })
             newRow(formCH, "Length"):Right():Slider({ Minimum=1, Maximum=32, Value=ch.Length or 8, ValueChanged=function(_,v) ch.Length=v end })
             newRow(formCH, "Thickness"):Right():Slider({ Minimum=1, Maximum=4, Value=ch.Thickness or 1, ValueChanged=function(_,v) ch.Thickness=v end })
             colorRow(formCH, "Color", function() return ch.Color end, function(c) ch.Color = c end)
@@ -1319,7 +1323,6 @@ local function __axiom_build_ui_with_cascade(_G_Config)
             newRow(formCH, "Outline Thickness"):Right():Slider({ Minimum=1, Maximum=3, Value=ch.OutlineThickness or 1, ValueChanged=function(_,v) ch.OutlineThickness=v end })
             newRow(formCH, "Spin"):Right():Toggle({ Value=ch.Spin, ValueChanged=function(_,v) ch.Spin=v end })
             newRow(formCH, "Spin Speed"):Right():Slider({ Minimum=0, Maximum=360, Value=ch.SpinSpeed or 90, ValueChanged=function(_,v) ch.SpinSpeed=v end })
-            newRow(formCH, "axiom.win Text"):Right():Toggle({ Value=ch.ShowAxiomText, ValueChanged=function(_,v) ch.ShowAxiomText=v end })
             colorRow(formCH, "Text Color", function() return ch.AxiomTextColor end, function(c) ch.AxiomTextColor = c end)
             newRow(formCH, "Text Gradient"):Right():Toggle({ Value=ch.AxiomTextUseGradient, ValueChanged=function(_,v) ch.AxiomTextUseGradient=v end })
             colorRow(formCH, "Text Gradient Color", function() return ch.AxiomTextGradientColor end, function(c) ch.AxiomTextGradientColor = c end)
@@ -2399,6 +2402,7 @@ end))
 
 local dotObj = Drawing.new("Circle")
 local snapLine = Drawing.new("Line")
+local silentAimSnapLine = Drawing.new("Line")
 local aimbotBTBox = Instance.new("BoxHandleAdornment")
 aimbotBTBox.Visible = false
 aimbotBTBox.AlwaysOnTop = true
@@ -2410,6 +2414,9 @@ dotObj.Filled = true
 snapLine.Visible = false
 snapLine.Thickness = 1
 snapLine.Transparency = 1
+silentAimSnapLine.Visible = false
+silentAimSnapLine.Thickness = 1
+silentAimSnapLine.Transparency = 1
 local fovGui = Instance.new("ScreenGui")
 fovGui.Name = "AxiomFOVCircle"
 fovGui.DisplayOrder = 9996
@@ -2548,7 +2555,7 @@ AxiomTrackConnection(RunService.RenderStepped:Connect(function(dt)
             local gradColor = ch.UseGradient and (ch.GradientColor or mainColor) or mainColor
             local outColor = ch.Outline and (ch.OutlineColor or Color3.fromRGB(0, 0, 0)) or mainColor
             local function rot(v) return Vector2.new(v.X * math.cos(angle) - v.Y * math.sin(angle), v.X * math.sin(angle) + v.Y * math.cos(angle)) end
-            if ch.DotMode or ch.Style == "dot" then
+            if ch.Style == "dot" then
                 local dotRadius = math.max(1, len)
                 if ch.Outline and crosshairDotOutline then
                     crosshairDotOutline.Visible = true
@@ -2608,12 +2615,10 @@ AxiomTrackConnection(RunService.RenderStepped:Connect(function(dt)
                     end
                 end
             end
-            crosshairText.Visible = ch.ShowAxiomText
-            if ch.ShowAxiomText then
-                crosshairText.Position = center + Vector2.new(0, (ch.DotMode or ch.Style == "dot") and (math.max(1, len) + 12) or (len + 14))
-                crosshairText.Color = ch.AxiomTextUseGradient and (ch.AxiomTextGradientColor or ch.AxiomTextColor) or (ch.AxiomTextColor or Color3.fromRGB(255, 255, 255))
-                crosshairText.Text = "axiom.win"
-            end
+            crosshairText.Visible = true
+            crosshairText.Position = center + Vector2.new(0, (ch.Style == "dot") and (math.max(1, len) + 12) or (len + 14))
+            crosshairText.Color = ch.AxiomTextUseGradient and (ch.AxiomTextGradientColor or ch.AxiomTextColor) or (ch.AxiomTextColor or Color3.fromRGB(255, 255, 255))
+            crosshairText.Text = "axiom.win"
         else
             crosshairDot.Visible = false
             if crosshairDotOutline then crosshairDotOutline.Visible = false end
@@ -2743,6 +2748,23 @@ AxiomTrackConnection(RunService.RenderStepped:Connect(function(dt)
         end
     else
         snapLine.Visible = false
+    end
+
+    local silentTar = _G.AxiomSilentAimTarget
+    if _G_Config.SilentAim and _G_Config.SilentAim.Enabled and _G_Config.SilentAim.SnapLine and silentTar and silentTar.Parent then
+        local screenPos = Camera:WorldToViewportPoint(silentTar.Position)
+        local center = Camera.ViewportSize / 2
+        if screenPos.Z > 0 then
+            silentAimSnapLine.Visible = true
+            silentAimSnapLine.From = center
+            silentAimSnapLine.To = Vector2.new(screenPos.X, screenPos.Y)
+            silentAimSnapLine.Color = _G_Config.SilentAim.SnapLineColor or Color3.fromRGB(255, 255, 255)
+            silentAimSnapLine.Thickness = math.clamp(_G_Config.SilentAim.SnapLineThickness or 1, 1, 4)
+        else
+            silentAimSnapLine.Visible = false
+        end
+    else
+        silentAimSnapLine.Visible = false
     end
 
     if _G_Config.Aimbot.TargetHUD and _G_Config.Aimbot.FOVCircle and tar then
